@@ -17,6 +17,12 @@ export function Header() {
           <div className="flex items-center space-x-4">
             {isAuthenticated ? (
               <>
+                <Link
+                  to="/files"
+                  className="text-sm text-gray-700 dark:text-gray-300 hover:text-primary-600"
+                >
+                  Files
+                </Link>
                 <span className="text-sm text-gray-700 dark:text-gray-300">
                   {user?.username}
                   {isAdmin && (

@@ -5,20 +5,7 @@ import { RegisterForm } from "./components/auth/RegisterForm";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { Home } from "./pages/Home";
-
-// Placeholder components for future implementation
-function Dashboard() {
-  return (
-    <Layout>
-      <div className="px-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Dashboard</h1>
-        <p className="text-gray-600 dark:text-gray-400">
-          File browser and markdown editor coming soon...
-        </p>
-      </div>
-    </Layout>
-  );
-}
+import Files from "./pages/Files";
 
 function AdminPanel() {
   return (
@@ -49,10 +36,12 @@ function App() {
 
         {/* Protected routes */}
         <Route
-          path="/dashboard"
+          path="/files"
           element={
             <ProtectedRoute>
-              <Dashboard />
+              <Layout>
+                <Files />
+              </Layout>
             </ProtectedRoute>
           }
         />
