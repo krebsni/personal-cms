@@ -118,15 +118,26 @@ describe("Files API", () => {
     });
 
     it("should reject duplicate file paths", async () => {
-      const request = createTestRequest("POST", "/api/files", {
+      // First upload
+      const request1 = createTestRequest("POST", "/api/files", {
         body: {
-          path: testFiles.markdown.path, // Same path as before
-          content: "Different content",
+          path: "/test/duplicate.md",
+          content: "First upload",
+        },
+        cookies: { token: userToken },
+      });
+      await SELF.fetch(request1);
+
+      // Try to upload again with same path
+      const request2 = createTestRequest("POST", "/api/files", {
+        body: {
+          path: "/test/duplicate.md",
+          content: "Second upload",
         },
         cookies: { token: userToken },
       });
 
-      const response = await SELF.fetch(request);
+      const response = await SELF.fetch(request2);
       const data = await getResponseJson(response);
 
       expect(response.status).toBe(409);
@@ -166,7 +177,18 @@ describe("Files API", () => {
 
   describe("GET /api/files/:path", () => {
     it("should get file metadata and content", async () => {
-      const encodedPath = encodeURIComponent(testFiles.markdown.path);
+      // First create a file
+      const uploadRequest = createTestRequest("POST", "/api/files", {
+        body: {
+          path: "/test/getfile.md",
+          content: "File content for GET test",
+        },
+        cookies: { token: userToken },
+      });
+      await SELF.fetch(uploadRequest);
+
+      // Then get it
+      const encodedPath = encodeURIComponent("/test/getfile.md");
       const request = createTestRequest("GET", `/api/files/${encodedPath}`, {
         cookies: { token: userToken },
       });
@@ -176,8 +198,8 @@ describe("Files API", () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data.metadata.path).toBe(testFiles.markdown.path);
-      expect(data.data.content).toBe(testFiles.markdown.content);
+      expect(data.data.metadata.path).toBe("/test/getfile.md");
+      expect(data.data.content).toBe("File content for GET test");
     });
 
     it("should reject access to non-existent file", async () => {
@@ -196,8 +218,19 @@ describe("Files API", () => {
 
   describe("PUT /api/files/:path", () => {
     it("should update file content", async () => {
-      const newContent = "# Updated Content\n\nThis file has been updated.";
-      const encodedPath = encodeURIComponent(testFiles.markdown.path);
+      // First create a file
+      const uploadRequest = createTestRequest("POST", "/api/files", {
+        body: {
+          path: "/test/updatefile.md",
+          content: "Original content",
+        },
+        cookies: { token: userToken },
+      });
+      await SELF.fetch(uploadRequest);
+
+      // Then update it
+      const newContent = "Updated content with more text";
+      const encodedPath = encodeURIComponent("/test/updatefile.md");
       const request = createTestRequest("PUT", `/api/files/${encodedPath}`, {
         body: { content: newContent },
         cookies: { token: userToken },
@@ -213,7 +246,7 @@ describe("Files API", () => {
     });
 
     it("should reject update without authentication", async () => {
-      const encodedPath = encodeURIComponent(testFiles.markdown.path);
+      const encodedPath = encodeURIComponent("/test/updatefile.md");
       const request = createTestRequest("PUT", `/api/files/${encodedPath}`, {
         body: { content: "Unauthorized update" },
       });
@@ -228,7 +261,18 @@ describe("Files API", () => {
 
   describe("DELETE /api/files/:path", () => {
     it("should delete file successfully", async () => {
-      const encodedPath = encodeURIComponent(testFiles.markdown.path);
+      // First create a file
+      const uploadRequest = createTestRequest("POST", "/api/files", {
+        body: {
+          path: "/test/deletefile.md",
+          content: "File to be deleted",
+        },
+        cookies: { token: userToken },
+      });
+      await SELF.fetch(uploadRequest);
+
+      // Then delete it
+      const encodedPath = encodeURIComponent("/test/deletefile.md");
       const request = createTestRequest("DELETE", `/api/files/${encodedPath}`, {
         cookies: { token: userToken },
       });

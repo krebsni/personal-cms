@@ -46,12 +46,17 @@ export function getCookiesFromResponse(response: Response): Record<string, strin
   if (!setCookie) return {};
 
   const cookies: Record<string, string> = {};
-  const parts = setCookie.split(";");
 
-  for (const part of parts) {
-    const [key, value] = part.trim().split("=");
-    if (key && value) {
-      cookies[key] = value;
+  // Parse cookie string: "token=value; HttpOnly; Secure; ..."
+  // Split by semicolon and get first part which is key=value
+  const cookieParts = setCookie.split(";").map(p => p.trim());
+
+  // First part is always the key=value pair
+  if (cookieParts.length > 0) {
+    const [key, ...valueParts] = cookieParts[0].split("=");
+    if (key && valueParts.length > 0) {
+      // Join back in case value contains '='
+      cookies[key] = valueParts.join("=");
     }
   }
 
