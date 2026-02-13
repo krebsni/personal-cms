@@ -6,6 +6,7 @@ import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
 import { Home } from "./pages/Home";
 import Files from "./pages/Files";
+import Editor from "./pages/Editor";
 
 function AdminPanel() {
   return (
@@ -42,6 +43,16 @@ function App() {
               <Layout>
                 <Files />
               </Layout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Editor route - matches any path under /editor/ */}
+        <Route
+          path="/editor/*"
+          element={
+            <ProtectedRoute>
+              <Editor />
             </ProtectedRoute>
           }
         />
