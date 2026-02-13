@@ -3,6 +3,7 @@ import { authRouter } from "./auth";
 import { filesRouter } from "./files";
 import { permissionsRouter } from "./permissions";
 import { highlightsRouter } from "./highlights";
+import { adminRouter } from "./admin";
 
 // Environment bindings from wrangler.toml
 export interface Env {
@@ -95,9 +96,9 @@ export default {
         return errorResponse("Config API not yet implemented", 501);
       }
 
-      // Admin routes (TODO: Phase 3.6)
+      // Admin routes
       if (path.startsWith("/api/admin")) {
-        return errorResponse("Admin API not yet implemented", 501);
+        return await adminRouter(request, env, { successResponse, errorResponse });
       }
 
       // 404 - Route not found

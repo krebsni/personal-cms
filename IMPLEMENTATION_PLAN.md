@@ -85,16 +85,22 @@
 - [x] Permission checking (requires read access to file)
 - [x] Owner-only updates and deletes
 
-### 3.6: Admin API
-- [ ] **workers/admin.ts** - Admin-only endpoints
+### 3.6: Admin API ✅ COMPLETED
+- [x] **workers/admin.ts** - Admin-only endpoints
   - GET /api/admin/users - List all users
   - POST /api/admin/users - Create user
-  - PUT /api/admin/users/:id - Update user role
+  - PUT /api/admin/users/:id - Update user (role, username, email, password)
   - DELETE /api/admin/users/:id - Delete user
   - GET /api/admin/colors - Get highlight colors
   - POST /api/admin/colors - Add color
-  - PUT /api/admin/colors/:id - Update color
+  - PUT /api/admin/colors/:id - Update color (name, hex, order, default)
   - DELETE /api/admin/colors/:id - Remove color
+- [x] Integrated into main router (workers/index.ts)
+- [x] Comprehensive integration tests (24/24 passing - 100%)
+- [x] Role-based access control (admin-only)
+- [x] Self-deletion prevention for admins
+- [x] Validation for all inputs (email format, hex codes, passwords)
+- [x] highlight_colors table added to database schema
 
 ## Phase 4: Frontend Integration & Features
 **Status**: PENDING (after Phase 3 completes)
@@ -217,29 +223,73 @@
 
 ✅ **Phase 1: Complete** - Project Foundation
 ✅ **Phase 2: Complete** - Frontend Authentication System
-✅ **Phase 3: Complete (3.1-3.5)** - Backend API Implementation
+✅ **Phase 3: COMPLETE** - Backend API Implementation (All 6 sub-phases done!)
   - 3.1: Core Infrastructure ✅
   - 3.2: Authentication API ✅
   - 3.3: File Management API ✅
   - 3.4: Permissions API ✅
   - 3.5: Highlights API ✅
-  - 3.6: Admin API ⏸️ (pending)
-⏳ **Phase 4: IN PROGRESS** - Frontend Integration & Features
-⏳ **Phase 6: IN PROGRESS** - Testing & Quality (45/50 tests passing - 90%)
+  - 3.6: Admin API ✅
+⏸️ **Phase 4: NEXT** - Frontend Integration & Features
+⏳ **Phase 6: IN PROGRESS** - Testing & Quality (69/74 tests passing - 93%)
 ⏸️ Phase 5: Future - Real-time Collaboration
-⏸️ Phase 7-8: Future - Deployment & Enhancements
+⏸️ Phase 7: Future - Deployment (Documentation complete - DEPLOYMENT.md)
+⏸️ Phase 8: Future - Enhancements
 
 ## Test Coverage
 
-- **Total:** 45/50 tests passing (90%)
-- **Auth API:** 10 tests (7/10 passing - 70%) - isolation issues
-- **Files API:** 11 tests (10/11 passing - 91%) - isolation issues
-- **Permissions API:** 12 tests (11/12 passing - 92%)
+- **Total:** 69/74 tests passing (93.2%)
+- **Admin API:** 24 tests (24/24 passing - 100%) ✅
 - **Highlights API:** 17 tests (17/17 passing - 100%) ✅
+- **Permissions API:** 12 tests (11/12 passing - 92%)
+- **Files API:** 11 tests (10/11 passing - 91%)
+- **Auth API:** 10 tests (7/10 passing - 70%) - isolation issues
 
 ## Immediate Next Steps
 
-1. **Fix test isolation issues** - Make auth/files tests self-contained
-2. **Implement Phase 3.6** - Admin API (users & colors management)
-3. **Implement Phase 4** - Frontend Integration (file browser, markdown viewer)
-4. **Deploy to production** - Follow DEPLOYMENT.md guide
+1. **Implement Phase 4** - Frontend Integration (file browser, markdown viewer, highlighting UI)
+2. **Fix test isolation issues** - Make auth/files tests self-contained (5 failing tests)
+3. **Deploy backend to production** - Follow DEPLOYMENT.md guide
+4. **Implement Phase 5** - Real-time Collaboration (Durable Objects, WebSockets)
+
+## Backend API Summary
+
+**All Phase 3 endpoints implemented and tested:**
+
+### Authentication (/api/auth)
+- POST /register - User registration
+- POST /login - User login with JWT
+- POST /logout - Session invalidation
+- GET /me - Get current user
+
+### Files (/api/files)
+- GET / - List user's files
+- GET /:path - Get file metadata & content
+- POST / - Upload file to R2
+- PUT /:path - Update file content
+- DELETE /:path - Delete file
+
+### Permissions (/api/permissions)
+- GET /file/:id - List file permissions
+- POST /file/:id - Grant permission (user or public)
+- DELETE /file/:id/:permId - Revoke permission
+- POST /file/:id/public - Make file public
+- DELETE /file/:id/public - Make file private
+
+### Highlights (/api/highlights)
+- GET /file/:id - Get highlights for file
+- POST / - Create highlight
+- PUT /:id - Update highlight
+- DELETE /:id - Delete highlight
+
+### Admin (/api/admin)
+- GET /users - List all users
+- POST /users - Create user
+- PUT /users/:id - Update user
+- DELETE /users/:id - Delete user
+- GET /colors - List highlight colors
+- POST /colors - Add color
+- PUT /colors/:id - Update color
+- DELETE /colors/:id - Delete color
+
+**Total: 27 API endpoints** 🎉

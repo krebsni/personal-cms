@@ -65,6 +65,17 @@ CREATE TABLE IF NOT EXISTS sessions (
   FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
+-- Highlight colors table
+-- Stores available colors for text highlighting
+CREATE TABLE IF NOT EXISTS highlight_colors (
+  id TEXT PRIMARY KEY,
+  name TEXT UNIQUE NOT NULL,
+  hex_code TEXT NOT NULL,
+  is_default INTEGER NOT NULL DEFAULT 0,
+  display_order INTEGER NOT NULL DEFAULT 0,
+  created_at INTEGER NOT NULL
+);
+
 -- Performance indexes
 CREATE INDEX IF NOT EXISTS idx_files_owner ON files(owner_id);
 CREATE INDEX IF NOT EXISTS idx_files_path ON files(path);
@@ -75,3 +86,4 @@ CREATE INDEX IF NOT EXISTS idx_highlights_user ON highlights(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token_hash);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
+CREATE INDEX IF NOT EXISTS idx_highlight_colors_order ON highlight_colors(display_order);
