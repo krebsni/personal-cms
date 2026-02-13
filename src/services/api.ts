@@ -128,7 +128,7 @@ class ApiClient {
 
   // Highlight endpoints
   async getHighlights(fileId: string): Promise<ApiResponse<Highlight[]>> {
-    return this.request<Highlight[]>(`/api/highlights/${fileId}`);
+    return this.request<Highlight[]>(`/api/highlights/file/${fileId}`);
   }
 
   async createHighlight(
@@ -142,7 +142,7 @@ class ApiClient {
 
   async updateHighlight(id: string, updates: Partial<Highlight>): Promise<ApiResponse<Highlight>> {
     return this.request<Highlight>(`/api/highlights/${id}`, {
-      method: "PATCH",
+      method: "PUT",
       body: JSON.stringify(updates),
     });
   }
