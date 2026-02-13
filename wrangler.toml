@@ -2,9 +2,14 @@ name = "personal-cms-workers"
 main = "workers/index.ts"
 compatibility_date = "2024-01-01"
 
+# Local development variables
+[vars]
+ENVIRONMENT = "development"
+JWT_SECRET = "dev-secret-key-change-in-production-minimum-32-chars"
+
 # Development configuration
 [env.development]
-vars = { ENVIRONMENT = "development" }
+vars = { ENVIRONMENT = "development", JWT_SECRET = "dev-secret-key-change-in-production-minimum-32-chars" }
 
 # Production configuration
 [env.production]

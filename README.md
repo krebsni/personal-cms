@@ -30,7 +30,7 @@ A sophisticated content management system for publishing and managing markdown f
 
 ## Prerequisites
 
-⚠️ **Important**: You need **Node.js 20+** to use Wrangler (Cloudflare CLI). Your current version is Node 18.19.1.
+✅ **Node.js 20+** is required for this project (Vite 7, React Router 7, Wrangler).
 
 ### Install Node.js 20+ (Required for Deployment)
 
