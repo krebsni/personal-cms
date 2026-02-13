@@ -1,6 +1,7 @@
 // Main Cloudflare Worker - API Router
 import { authRouter } from "./auth";
 import { filesRouter } from "./files";
+import { permissionsRouter } from "./permissions";
 
 // Environment bindings from wrangler.toml
 export interface Env {
@@ -76,6 +77,11 @@ export default {
       // Files routes
       if (path.startsWith("/api/files")) {
         return await filesRouter(request, env, { successResponse, errorResponse });
+      }
+
+      // Permissions routes
+      if (path.startsWith("/api/permissions")) {
+        return await permissionsRouter(request, env, { successResponse, errorResponse });
       }
 
       // Highlights routes (TODO: Phase 3.5)

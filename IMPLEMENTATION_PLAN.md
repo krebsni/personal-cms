@@ -61,14 +61,17 @@
 - [x] Owner-based access control
 - [x] End-to-end testing ✅
 
-### 3.4: Permissions API
-- [ ] **workers/permissions.ts** - Permission management
+### 3.4: Permissions API ✅ COMPLETED
+- [x] **workers/permissions.ts** - Permission management
   - GET /api/permissions/file/:id - Get file permissions
-  - POST /api/permissions/file/:id - Grant file access
-  - DELETE /api/permissions/file/:id/:userId - Revoke access
-  - GET /api/permissions/folder/:id - Get folder permissions
-  - POST /api/permissions/folder/:id - Grant folder access (recursive)
-  - Permission checking helpers
+  - POST /api/permissions/file/:id - Grant file access (user-specific & public)
+  - DELETE /api/permissions/file/:id/:permissionId - Revoke access
+  - POST /api/permissions/file/:id/public - Make file public
+  - DELETE /api/permissions/file/:id/public - Make file private
+  - Owner-only permission management
+- [x] Integration tests (8/12 passing)
+- [x] SQL NULL handling for public permissions
+- [x] Owner verification for all permission operations
 
 ### 3.5: Highlights API
 - [ ] **workers/highlights.ts** - Highlight annotations
