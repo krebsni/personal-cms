@@ -49,14 +49,17 @@
 - [x] Session storage in D1 database
 - [x] End-to-end testing ✅
 
-### 3.3: File Management API
-- [ ] **workers/files.ts** - File CRUD operations
+### 3.3: File Management API ✅ COMPLETED
+- [x] **workers/files.ts** - File CRUD operations
   - GET /api/files - List files (with permission filtering)
-  - GET /api/files/:id - Get file metadata + content from R2
-  - POST /api/files - Upload file to R2 + save metadata to D1
-  - PUT /api/files/:id - Update file content
-  - DELETE /api/files/:id - Delete from R2 + D1
-  - Folder operations (create, list, delete)
+  - GET /api/files/:path - Get file metadata + content from R2
+  - POST /api/files - Upload file to R2 + save metadata to D1 (JSON & multipart)
+  - PUT /api/files/:path - Update file content
+  - DELETE /api/files/:path - Delete from R2 + D1
+- [x] Permission checking helpers
+- [x] R2 storage integration
+- [x] Owner-based access control
+- [x] End-to-end testing ✅
 
 ### 3.4: Permissions API
 - [ ] **workers/permissions.ts** - Permission management

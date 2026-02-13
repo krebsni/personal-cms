@@ -1,5 +1,6 @@
 // Main Cloudflare Worker - API Router
 import { authRouter } from "./auth";
+import { filesRouter } from "./files";
 
 // Environment bindings from wrangler.toml
 export interface Env {
@@ -72,9 +73,9 @@ export default {
         return await authRouter(request, env, { successResponse, errorResponse });
       }
 
-      // Files routes (TODO: Phase 3.3)
+      // Files routes
       if (path.startsWith("/api/files")) {
-        return errorResponse("Files API not yet implemented", 501);
+        return await filesRouter(request, env, { successResponse, errorResponse });
       }
 
       // Highlights routes (TODO: Phase 3.5)
