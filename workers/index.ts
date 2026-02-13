@@ -118,3 +118,6 @@ export type ResponseHelpers = {
   successResponse: typeof successResponse;
   errorResponse: typeof errorResponse;
 };
+
+// Export Durable Object for collaboration
+export { CollaborationRoom } from "./collaboration";
