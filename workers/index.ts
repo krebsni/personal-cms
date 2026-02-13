@@ -2,6 +2,7 @@
 import { authRouter } from "./auth";
 import { filesRouter } from "./files";
 import { permissionsRouter } from "./permissions";
+import { highlightsRouter } from "./highlights";
 
 // Environment bindings from wrangler.toml
 export interface Env {
@@ -84,9 +85,9 @@ export default {
         return await permissionsRouter(request, env, { successResponse, errorResponse });
       }
 
-      // Highlights routes (TODO: Phase 3.5)
+      // Highlights routes
       if (path.startsWith("/api/highlights")) {
-        return errorResponse("Highlights API not yet implemented", 501);
+        return await highlightsRouter(request, env, { successResponse, errorResponse });
       }
 
       // Config routes (public)
