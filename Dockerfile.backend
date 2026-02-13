@@ -1,0 +1,21 @@
+# Dockerfile for Personal CMS Backend (Cloudflare Workers + Wrangler)
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci
+
+# Copy backend code
+COPY workers ./workers
+COPY wrangler.toml ./
+COPY migrations ./migrations
+
+# Expose Wrangler dev server port
+EXPOSE 8787
+
+# Start Wrangler dev server
+CMD ["npx", "wrangler", "dev", "--local", "--port", "8787"]

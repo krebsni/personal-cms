@@ -1,0 +1,50 @@
+# Docker Compose configuration for Personal CMS local development
+version: "3.8"
+
+services:
+  # Frontend - Vite dev server
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    ports:
+      - "5173:5173" # Vite dev server
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./index.html:/app/index.html
+      - ./vite.config.ts:/app/vite.config.ts
+      - ./tailwind.config.js:/app/tailwind.config.js
+      - ./postcss.config.js:/app/postcss.config.js
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./tsconfig.app.json:/app/tsconfig.app.json
+      - /app/node_modules # Prevent overwriting node_modules
+    environment:
+      - VITE_API_URL=http://localhost:8787
+      - NODE_ENV=development
+    command: npm run dev -- --host 0.0.0.0
+    networks:
+      - personal-cms
+
+  # Backend - Cloudflare Workers with Wrangler
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    ports:
+      - "8787:8787" # Wrangler dev server
+    volumes:
+      - ./workers:/app/workers
+      - ./migrations:/app/migrations
+      - ./wrangler.toml:/app/wrangler.toml
+      - ./.wrangler:/app/.wrangler
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    command: npx wrangler dev --local --port 8787
+    networks:
+      - personal-cms
+
+networks:
+  personal-cms:
+    driver: bridge

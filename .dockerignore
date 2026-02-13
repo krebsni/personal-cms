@@ -1,0 +1,18 @@
+# Docker ignore file for Personal CMS
+node_modules
+dist
+.git
+.github
+.claude
+.env
+.env.local
+*.log
+npm-debug.log*
+.DS_Store
+coverage
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.wrangler
