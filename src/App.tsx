@@ -7,17 +7,7 @@ import { AdminRoute } from "./components/auth/AdminRoute";
 import { Home } from "./pages/Home";
 import Files from "./pages/Files";
 import Editor from "./pages/Editor";
-
-function AdminPanel() {
-  return (
-    <Layout>
-      <div className="px-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Admin Panel</h1>
-        <p className="text-gray-600 dark:text-gray-400">User management coming soon...</p>
-      </div>
-    </Layout>
-  );
-}
+import Admin from "./pages/Admin";
 
 function App() {
   return (
@@ -62,7 +52,9 @@ function App() {
           path="/admin"
           element={
             <AdminRoute>
-              <AdminPanel />
+              <Layout>
+                <Admin />
+              </Layout>
             </AdminRoute>
           }
         />
