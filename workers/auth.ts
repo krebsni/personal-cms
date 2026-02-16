@@ -1,3 +1,4 @@
+
 // Authentication module for Cloudflare Workers
 import bcrypt from "bcryptjs";
 import type { Env, ResponseHelpers } from "./index";
@@ -19,13 +20,14 @@ function generateId(): string {
 }
 
 // Generate JWT token
-async function generateToken(user: User, secret: string): Promise<string> {
+async function generateToken(user: User, secret: string, sessionId: string): Promise<string> {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
   const payload = btoa(
     JSON.stringify({
       sub: user.id,
       email: user.email,
       role: user.role,
+      sid: sessionId, // Add session ID to the token
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60, // 7 days
     })
@@ -118,6 +120,19 @@ async function getUserFromRequest(request: Request, env: Env): Promise<User | nu
 
   try {
     const decoded = await verifyToken(token, env.JWT_SECRET);
+    if (!decoded.sid) {
+      return null; // No session ID in token
+    }
+    
+    // Check if session is valid in the database
+    const session = await env.DB.prepare("SELECT user_id FROM sessions WHERE id = ? AND expires_at > ?")
+        .bind(decoded.sid, Math.floor(Date.now() / 1000))
+        .first();
+
+    if (!session) {
+        return null; // Session not found or expired
+    }
+
     const user = await env.DB.prepare("SELECT * FROM users WHERE id = ?")
       .bind(decoded.sub)
       .first<User>();
@@ -196,8 +211,18 @@ export async function authRouter(
         return errorResponse("Failed to create user", 500);
       }
 
+      // Create session
+      const sessionId = generateId();
+      const expiresAt = now + 7 * 24 * 60 * 60; // 7 days
+
+      await env.DB.prepare(
+        "INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)"
+      )
+        .bind(sessionId, user.id, expiresAt, now)
+        .run();
+        
       // Generate JWT
-      const token = await generateToken(user, env.JWT_SECRET);
+      const token = await generateToken(user, env.JWT_SECRET, sessionId);
 
       // Return user data (without password_hash)
       const { password_hash, ...userData } = user;
@@ -232,20 +257,20 @@ export async function authRouter(
       if (!valid) {
         return errorResponse("Invalid email or password", 401);
       }
-
-      // Generate JWT
-      const token = await generateToken(user, env.JWT_SECRET);
-
-      // Store session in database
+      
+      // Create session
       const sessionId = generateId();
       const now = Math.floor(Date.now() / 1000);
       const expiresAt = now + 7 * 24 * 60 * 60; // 7 days
 
       await env.DB.prepare(
-        "INSERT INTO sessions (id, user_id, token_hash, expires_at, created_at) VALUES (?, ?, ?, ?, ?)"
+        "INSERT INTO sessions (id, user_id, expires_at, created_at) VALUES (?, ?, ?, ?)"
       )
-        .bind(sessionId, user.id, token.substring(0, 64), expiresAt, now)
+        .bind(sessionId, user.id, expiresAt, now)
         .run();
+
+      // Generate JWT
+      const token = await generateToken(user, env.JWT_SECRET, sessionId);
 
       // Return user data (without password_hash)
       const { password_hash, ...userData } = user;
@@ -258,14 +283,24 @@ export async function authRouter(
 
     // POST /api/auth/logout
     if (path === "/api/auth/logout" && request.method === "POST") {
-      const user = await getUserFromRequest(request, env);
-
-      if (user) {
-        // Delete user sessions from database
-        await env.DB.prepare("DELETE FROM sessions WHERE user_id = ?")
-          .bind(user.id)
-          .run();
-      }
+        let token: string | null = null;
+        const cookies = request.headers.get("Cookie");
+        if (cookies) {
+            const match = cookies.match(/token=([^;]+)/);
+            if (match) {
+            token = match[1];
+            }
+        }
+        if (token) {
+            try {
+                const decoded = await verifyToken(token, env.JWT_SECRET);
+                if (decoded.sid) {
+                    await env.DB.prepare("DELETE FROM sessions WHERE id = ?").bind(decoded.sid).run();
+                }
+            } catch (error) {
+                // Ignore errors if token is invalid
+            }
+        }
 
       const response = successResponse(null, "Logged out successfully");
       response.headers.set("Set-Cookie", createClearCookie());

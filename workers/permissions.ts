@@ -41,7 +41,7 @@ export async function permissionsRouter(
     const user = await getUserFromRequest(request, env);
 
     if (!user) {
-      return errorResponse("Authentication required", 401);
+      return errorResponse("Not authenticated", 401);
     }
 
     // GET /api/permissions/file/:fileId - Get file permissions
@@ -78,13 +78,6 @@ export async function permissionsRouter(
     // POST /api/permissions/file/:fileId - Grant file permission
     if (path.match(/^\/api\/permissions\/file\/[^/]+$/) && request.method === "POST") {
       const fileId = path.split("/").pop()!;
-
-      // Check if user is owner or admin
-      const owner = await isFileOwner(fileId, user.id, env);
-      if (!owner && user.role !== "admin") {
-        return errorResponse("Only file owner can grant permissions", 403);
-      }
-
       const body = await request.json() as {
         userId?: string | null;
         permission: "read" | "write";
@@ -92,6 +85,12 @@ export async function permissionsRouter(
 
       if (!body.permission || !["read", "write"].includes(body.permission)) {
         return errorResponse("Invalid permission type. Must be 'read' or 'write'", 400);
+      }
+
+      // Check if user is owner or admin
+      const owner = await isFileOwner(fileId, user.id, env);
+      if (!owner && user.role !== "admin") {
+        return errorResponse("Only file owner can grant permissions", 403);
       }
 
       // Check if permission already exists
@@ -152,6 +151,16 @@ export async function permissionsRouter(
       const permissionId = parts.pop()!;
       const fileId = parts.pop()!;
 
+      const permission = await env.DB.prepare(
+        "SELECT * FROM permissions WHERE id = ? AND file_id = ?"
+      )
+        .bind(permissionId, fileId)
+        .first<Permission>();
+
+      if (!permission) {
+        return errorResponse("Permission not found", 404);
+      }
+
       // Check if user is owner or admin
       const owner = await isFileOwner(fileId, user.id, env);
       if (!owner && user.role !== "admin") {
@@ -159,15 +168,11 @@ export async function permissionsRouter(
       }
 
       // Delete permission
-      const result = await env.DB.prepare(
-        "DELETE FROM permissions WHERE id = ? AND file_id = ?"
+      await env.DB.prepare(
+        "DELETE FROM permissions WHERE id = ?"
       )
-        .bind(permissionId, fileId)
+        .bind(permissionId)
         .run();
-
-      if (result.meta.changes === 0) {
-        return errorResponse("Permission not found", 404);
-      }
 
       return successResponse(null, "Permission revoked");
     }
@@ -227,6 +232,16 @@ export async function permissionsRouter(
       pathParts.pop(); // Remove 'public'
       const fileId = pathParts.pop()!;
 
+      const permission = await env.DB.prepare(
+        "SELECT * FROM permissions WHERE file_id = ? AND user_id IS NULL"
+      )
+        .bind(fileId)
+        .first<Permission>();
+
+      if (!permission) {
+        return errorResponse("File is not public or permission not found", 404);
+      }
+
       // Check if user is owner or admin
       const owner = await isFileOwner(fileId, user.id, env);
       if (!owner && user.role !== "admin") {
@@ -234,15 +249,11 @@ export async function permissionsRouter(
       }
 
       // Delete public permission
-      const result = await env.DB.prepare(
-        "DELETE FROM permissions WHERE file_id = ? AND user_id IS NULL"
+      await env.DB.prepare(
+        "DELETE FROM permissions WHERE id = ?"
       )
-        .bind(fileId)
+        .bind(permission.id)
         .run();
-
-      if (result.meta.changes === 0) {
-        return errorResponse("File is not public or permission not found", 404);
-      }
 
       return successResponse(null, "File made private");
     }

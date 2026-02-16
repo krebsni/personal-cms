@@ -1,7 +1,7 @@
 // Integration tests for Files API
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { env, SELF } from "cloudflare:test";
-import { createTestRequest, getResponseJson, getCookiesFromResponse, testUsers, testFiles } from "../helpers/test-utils";
+import { createTestRequest, getResponseJson, getCookiesFromResponse } from "../helpers/test-utils";
 
 describe("Files API", () => {
   let userToken: string;
@@ -48,7 +48,6 @@ describe("Files API", () => {
         CREATE TABLE IF NOT EXISTS sessions (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
-          token_hash TEXT NOT NULL,
           expires_at INTEGER NOT NULL,
           created_at INTEGER NOT NULL
         )
@@ -80,13 +79,20 @@ describe("Files API", () => {
     userToken = cookies.token;
   });
 
+  afterEach(async () => {
+    // Clean up created files after each test
+    await env.DB.prepare("DELETE FROM files").run();
+  });
+
   describe("POST /api/files", () => {
     it("should upload a file successfully (JSON)", async () => {
+      const testFile = {
+        path: "/test/upload.md",
+        content: "This is a test file for upload.",
+      };
+
       const request = createTestRequest("POST", "/api/files", {
-        body: {
-          path: testFiles.markdown.path,
-          content: testFiles.markdown.content,
-        },
+        body: testFile,
         cookies: { token: userToken },
       });
 
@@ -95,8 +101,8 @@ describe("Files API", () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data.path).toBe(testFiles.markdown.path);
-      expect(data.data.size).toBe(testFiles.markdown.content.length);
+      expect(data.data.path).toBe(testFile.path);
+      expect(data.data.size).toBe(testFile.content.length);
       expect(data.data.ownerId).toBe(userId);
       expect(data.message).toContain("uploaded");
     });
@@ -114,26 +120,22 @@ describe("Files API", () => {
 
       expect(response.status).toBe(401);
       expect(data.success).toBe(false);
-      expect(data.error).toContain("Authentication required");
+      expect(data.error).toContain("Not authenticated");
     });
 
     it("should reject duplicate file paths", async () => {
+      const duplicateFile = { path: "/test/duplicate.md", content: "First upload" };
+      
       // First upload
       const request1 = createTestRequest("POST", "/api/files", {
-        body: {
-          path: "/test/duplicate.md",
-          content: "First upload",
-        },
+        body: duplicateFile,
         cookies: { token: userToken },
       });
       await SELF.fetch(request1);
 
       // Try to upload again with same path
       const request2 = createTestRequest("POST", "/api/files", {
-        body: {
-          path: "/test/duplicate.md",
-          content: "Second upload",
-        },
+        body: { ...duplicateFile, content: "Second upload" },
         cookies: { token: userToken },
       });
 
@@ -142,12 +144,18 @@ describe("Files API", () => {
 
       expect(response.status).toBe(409);
       expect(data.success).toBe(false);
-      expect(data.error).toContain("already exists");
+      expect(data.error).toContain("File already exists at this path");
     });
   });
 
   describe("GET /api/files", () => {
     it("should list user's files", async () => {
+      // Create a file first
+      await SELF.fetch(createTestRequest("POST", "/api/files", {
+        body: { path: "/test/list.md", content: "A file to be listed" },
+        cookies: { token: userToken },
+      }));
+
       const request = createTestRequest("GET", "/api/files", {
         cookies: { token: userToken },
       });
@@ -158,54 +166,40 @@ describe("Files API", () => {
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
       expect(Array.isArray(data.data)).toBe(true);
-      expect(data.data.length).toBeGreaterThan(0);
-      expect(data.data[0]).toHaveProperty("id");
-      expect(data.data[0]).toHaveProperty("path");
-      expect(data.data[0]).toHaveProperty("ownerId");
+      expect(data.data.length).toBe(1);
+      expect(data.data[0]).toHaveProperty("path", "/test/list.md");
     });
 
-    it("should return empty array for anonymous users", async () => {
+    it("should return 401 for anonymous users", async () => {
       const request = createTestRequest("GET", "/api/files");
       const response = await SELF.fetch(request);
       const data = await getResponseJson(response);
 
-      expect(response.status).toBe(200);
-      expect(data.success).toBe(true);
-      expect(data.data).toEqual([]);
+      expect(response.status).toBe(401);
+      expect(data.success).toBe(false);
+      expect(data.error).toContain("Not authenticated");
     });
   });
 
   describe("GET /api/files/:path", () => {
     it("should get file metadata and content", async () => {
-      // First create a file
-      const uploadRequest = createTestRequest("POST", "/api/files", {
-        body: {
-          path: "/test/getfile.md",
-          content: "File content for GET test",
-        },
-        cookies: { token: userToken },
-      });
-      await SELF.fetch(uploadRequest);
+      const file = { path: "/test/get.md", content: "File content for GET test" };
+      await SELF.fetch(createTestRequest("POST", "/api/files", { body: file, cookies: { token: userToken } }));
 
-      // Then get it
-      const encodedPath = encodeURIComponent("/test/getfile.md");
-      const request = createTestRequest("GET", `/api/files/${encodedPath}`, {
-        cookies: { token: userToken },
-      });
+      const encodedPath = encodeURIComponent(file.path);
+      const request = createTestRequest("GET", `/api/files/${encodedPath}`, { cookies: { token: userToken } });
 
       const response = await SELF.fetch(request);
       const data = await getResponseJson(response);
-
+      
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data.metadata.path).toBe("/test/getfile.md");
-      expect(data.data.content).toBe("File content for GET test");
+      expect(data.data.metadata.path).toBe(file.path);
+      expect(data.data.content).toBe(file.content);
     });
 
     it("should reject access to non-existent file", async () => {
-      const request = createTestRequest("GET", "/api/files/%2Fnonexistent.md", {
-        cookies: { token: userToken },
-      });
+      const request = createTestRequest("GET", "/api/files/%2Fnonexistent.md", { cookies: { token: userToken } });
 
       const response = await SELF.fetch(request);
       const data = await getResponseJson(response);
@@ -218,19 +212,11 @@ describe("Files API", () => {
 
   describe("PUT /api/files/:path", () => {
     it("should update file content", async () => {
-      // First create a file
-      const uploadRequest = createTestRequest("POST", "/api/files", {
-        body: {
-          path: "/test/updatefile.md",
-          content: "Original content",
-        },
-        cookies: { token: userToken },
-      });
-      await SELF.fetch(uploadRequest);
+      const file = { path: "/test/update.md", content: "Original content" };
+      await SELF.fetch(createTestRequest("POST", "/api/files", { body: file, cookies: { token: userToken } }));
 
-      // Then update it
-      const newContent = "Updated content with more text";
-      const encodedPath = encodeURIComponent("/test/updatefile.md");
+      const newContent = "Updated content";
+      const encodedPath = encodeURIComponent(file.path);
       const request = createTestRequest("PUT", `/api/files/${encodedPath}`, {
         body: { content: newContent },
         cookies: { token: userToken },
@@ -246,10 +232,11 @@ describe("Files API", () => {
     });
 
     it("should reject update without authentication", async () => {
-      const encodedPath = encodeURIComponent("/test/updatefile.md");
-      const request = createTestRequest("PUT", `/api/files/${encodedPath}`, {
-        body: { content: "Unauthorized update" },
-      });
+        const file = { path: "/test/update-noauth.md", content: "File to be updated" };
+        await SELF.fetch(createTestRequest("POST", "/api/files", { body: file, cookies: { token: userToken } }));
+
+      const encodedPath = encodeURIComponent(file.path);
+      const request = createTestRequest("PUT", `/api/files/${encodedPath}`, { body: { content: "Unauthorized" } });
 
       const response = await SELF.fetch(request);
       const data = await getResponseJson(response);
@@ -261,21 +248,11 @@ describe("Files API", () => {
 
   describe("DELETE /api/files/:path", () => {
     it("should delete file successfully", async () => {
-      // First create a file
-      const uploadRequest = createTestRequest("POST", "/api/files", {
-        body: {
-          path: "/test/deletefile.md",
-          content: "File to be deleted",
-        },
-        cookies: { token: userToken },
-      });
-      await SELF.fetch(uploadRequest);
+      const file = { path: "/test/delete.md", content: "File to be deleted" };
+      await SELF.fetch(createTestRequest("POST", "/api/files", { body: file, cookies: { token: userToken } }));
 
-      // Then delete it
-      const encodedPath = encodeURIComponent("/test/deletefile.md");
-      const request = createTestRequest("DELETE", `/api/files/${encodedPath}`, {
-        cookies: { token: userToken },
-      });
+      const encodedPath = encodeURIComponent(file.path);
+      const request = createTestRequest("DELETE", `/api/files/${encodedPath}`, { cookies: { token: userToken } });
 
       const response = await SELF.fetch(request);
       const data = await getResponseJson(response);
@@ -286,9 +263,7 @@ describe("Files API", () => {
     });
 
     it("should return 404 when deleting non-existent file", async () => {
-      const request = createTestRequest("DELETE", "/api/files/%2Fnonexistent.md", {
-        cookies: { token: userToken },
-      });
+      const request = createTestRequest("DELETE", "/api/files/%2Fnonexistent.md", { cookies: { token: userToken } });
 
       const response = await SELF.fetch(request);
       const data = await getResponseJson(response);

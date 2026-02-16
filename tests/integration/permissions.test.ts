@@ -1,5 +1,5 @@
 // Integration tests for Permissions API
-import { describe, it, expect, beforeAll } from "vitest";
+import { describe, it, expect, beforeAll, afterEach } from "vitest";
 import { env, SELF } from "cloudflare:test";
 import { createTestRequest, getResponseJson, getCookiesFromResponse } from "../helpers/test-utils";
 
@@ -51,7 +51,6 @@ describe("Permissions API", () => {
         CREATE TABLE IF NOT EXISTS sessions (
           id TEXT PRIMARY KEY,
           user_id TEXT NOT NULL,
-          token_hash TEXT NOT NULL,
           expires_at INTEGER NOT NULL,
           created_at INTEGER NOT NULL
         )
@@ -98,6 +97,13 @@ describe("Permissions API", () => {
     testFileId = fileData.data.id;
   });
 
+  afterEach(async () => {
+    // Clean up created permissions and files after each test
+    await env.DB.prepare("DELETE FROM permissions").run();
+    await env.DB.prepare("DELETE FROM files").run();
+  });
+
+
   describe("POST /api/permissions/file/:fileId", () => {
     it("should grant read permission to specific user", async () => {
       const request = createTestRequest("POST", `/api/permissions/file/${testFileId}`, {
@@ -127,7 +133,7 @@ describe("Permissions API", () => {
 
       expect(response.status).toBe(403);
       expect(data.success).toBe(false);
-      expect(data.error).toContain("owner");
+      expect(data.error).toContain("Only file owner can grant permissions");
     });
 
     it("should reject invalid permission type", async () => {
@@ -141,7 +147,7 @@ describe("Permissions API", () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toContain("Invalid permission");
+      expect(data.error).toContain("Invalid permission type");
     });
 
     it("should update existing permission", async () => {

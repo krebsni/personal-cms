@@ -76,10 +76,7 @@ async function checkFilePermission(
 }
 
 // Get all files accessible to user
-async function getAccessibleFiles(userId: string | null, env: Env): Promise<FileRecord[]> {
-  let files: FileRecord[] = [];
-
-  if (userId) {
+async function getAccessibleFiles(userId: string, env: Env): Promise<FileRecord[]> {
     // Get files owned by user + files with explicit permission + public files
     const result = await env.DB.prepare(
       `SELECT DISTINCT f.* FROM files f
@@ -90,21 +87,7 @@ async function getAccessibleFiles(userId: string | null, env: Env): Promise<File
       .bind(userId, userId)
       .all<FileRecord>();
 
-    files = result.results || [];
-  } else {
-    // Anonymous users only see public files
-    const result = await env.DB.prepare(
-      `SELECT DISTINCT f.* FROM files f
-       INNER JOIN permissions p ON f.id = p.file_id
-       WHERE p.user_id IS NULL
-       ORDER BY f.created_at DESC`
-    )
-      .all<FileRecord>();
-
-    files = result.results || [];
-  }
-
-  return files;
+    return result.results || [];
 }
 
 // Files router
@@ -123,7 +106,10 @@ export async function filesRouter(
 
     // GET /api/files - List all accessible files
     if (path === "/api/files" && request.method === "GET") {
-      const files = await getAccessibleFiles(user?.id || null, env);
+        if (!user) {
+            return errorResponse("Not authenticated", 401);
+        }
+      const files = await getAccessibleFiles(user.id, env);
 
       // Convert database format to API format (snake_case to camelCase)
       const filesData = files.map((f) => ({
@@ -141,7 +127,7 @@ export async function filesRouter(
     // POST /api/files - Upload file
     if (path === "/api/files" && request.method === "POST") {
       if (!user) {
-        return errorResponse("Authentication required", 401);
+        return errorResponse("Not authenticated", 401);
       }
 
       const contentType = request.headers.get("content-type") || "";
@@ -206,21 +192,31 @@ export async function filesRouter(
 
       // Save metadata to D1
       const now = Math.floor(Date.now() / 1000);
+      const newFile: FileRecord = {
+        id: fileId,
+        path: filePath,
+        owner_id: user.id,
+        content_r2_key: r2Key,
+        size: fileContent.byteLength,
+        created_at: now,
+        updated_at: now,
+      };
+
       await env.DB.prepare(
         "INSERT INTO files (id, path, owner_id, content_r2_key, size, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
       )
-        .bind(fileId, filePath, user.id, r2Key, fileContent.byteLength, now, now)
+        .bind(newFile.id, newFile.path, newFile.owner_id, newFile.content_r2_key, newFile.size, newFile.created_at, newFile.updated_at)
         .run();
 
       // Return file metadata
       return successResponse(
         {
-          id: fileId,
-          path: filePath,
-          ownerId: user.id,
-          size: fileContent.byteLength,
-          createdAt: now,
-          updatedAt: now,
+          id: newFile.id,
+          path: newFile.path,
+          ownerId: newFile.owner_id,
+          size: newFile.size,
+          createdAt: newFile.created_at,
+          updatedAt: newFile.updated_at,
         },
         "File uploaded successfully"
       );
@@ -272,7 +268,7 @@ export async function filesRouter(
     // PUT /api/files/:path - Update file content
     if (path.startsWith("/api/files/") && request.method === "PUT") {
       if (!user) {
-        return errorResponse("Authentication required", 401);
+        return errorResponse("Not authenticated", 401);
       }
 
       const encodedPath = path.substring("/api/files/".length);
@@ -332,7 +328,7 @@ export async function filesRouter(
     // DELETE /api/files/:path - Delete file
     if (path.startsWith("/api/files/") && request.method === "DELETE") {
       if (!user) {
-        return errorResponse("Authentication required", 401);
+        return errorResponse("Not authenticated", 401);
       }
 
       const encodedPath = path.substring("/api/files/".length);
