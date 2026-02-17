@@ -5,11 +5,13 @@ export default defineWorkersConfig({
     poolOptions: {
       workers: {
         main: "./workers/index.ts",
-        miniflare: {
+      miniflare: {
           compatibilityDate: "2024-01-01",
-          // Override wrangler.toml to exclude Durable Objects (not implemented yet)
           d1Databases: ["DB"],
           r2Buckets: ["R2_BUCKET"],
+          durableObjects: {
+            COLLABORATION_ROOM: "CollaborationRoom",
+          },
           bindings: {
             JWT_SECRET: "test-secret-key-for-testing-only",
             ENVIRONMENT: "test",

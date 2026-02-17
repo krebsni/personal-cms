@@ -6,12 +6,12 @@ Complete guide for deploying the Personal CMS application to Cloudflare Workers 
 
 1. [Prerequisites](#prerequisites)
 2. [Local Development Setup](#local-development-setup)
-3. [Database Setup](#database-setup)
-4. [R2 Storage Setup](#r2-storage-setup)
-5. [Environment Configuration](#environment-configuration)
-6. [Deployment to Production](#deployment-to-production)
-7. [Post-Deployment Verification](#post-deployment-verification)
-8. [Troubleshooting](#troubleshooting)
+9. [Database Setup](#database-setup)
+10. [R2 Storage Setup](#r2-storage-setup)
+11. [Environment Configuration](#environment-configuration)
+12. [Deployment to Production](#deployment-to-production)
+13. [Post-Deployment Verification](#post-deployment-verification)
+14. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -174,10 +174,10 @@ Apply migrations:
 
 ```bash
 # Development
-npx wrangler d1 execute personal-cms-dev --file=./migrations/001_initial_schema.sql
+npx wrangler d1 execute personal-cms-dev --file=./migrations/0001_initial.sql
 
 # Production
-npx wrangler d1 execute personal-cms-prod --file=./migrations/001_initial_schema.sql
+npx wrangler d1 execute personal-cms-prod --file=./migrations/0001_initial.sql
 ```
 
 ---

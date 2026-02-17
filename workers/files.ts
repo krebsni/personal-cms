@@ -1,6 +1,8 @@
 // File Management module for Cloudflare Workers
-import type { Env, ResponseHelpers } from "./index";
-import { getUserFromRequest } from "./auth";
+import { Hono } from "hono";
+import type { Env } from "./types";
+import { getUserFromContext } from "./auth";
+import { generateId } from "./utils";
 
 // File metadata type matching database schema
 interface FileRecord {
@@ -22,10 +24,7 @@ interface Permission {
   created_at: number;
 }
 
-// Generate UUID v4
-function generateId(): string {
-  return crypto.randomUUID();
-}
+
 
 // Check if user has permission to access file
 async function checkFilePermission(
@@ -107,156 +106,163 @@ async function getAccessibleFiles(userId: string | null, env: Env): Promise<File
   return files;
 }
 
-// Files router
-export async function filesRouter(
-  request: Request,
-  env: Env,
-  helpers: ResponseHelpers
-): Promise<Response> {
-  const { successResponse, errorResponse } = helpers;
-  const url = new URL(request.url);
-  const path = url.pathname;
+const app = new Hono<{ Bindings: Env }>();
 
+// GET /api/files/:path - List all accessible files
+app.get("/", async (c) => {
   try {
-    // Get current user (can be null for anonymous)
-    const user = await getUserFromRequest(request, env);
+    const user = await getUserFromContext(c);
+    const files = await getAccessibleFiles(user?.id || null, c.env);
 
-    // GET /api/files - List all accessible files
-    if (path === "/api/files" && request.method === "GET") {
-      const files = await getAccessibleFiles(user?.id || null, env);
+    // Convert database format to API format (snake_case to camelCase)
+    const filesData = files.map((f) => ({
+      id: f.id,
+      path: f.path,
+      ownerId: f.owner_id,
+      size: f.size,
+      createdAt: f.created_at,
+      updatedAt: f.updated_at,
+    }));
 
-      // Convert database format to API format (snake_case to camelCase)
-      const filesData = files.map((f) => ({
-        id: f.id,
-        path: f.path,
-        ownerId: f.owner_id,
-        size: f.size,
-        createdAt: f.created_at,
-        updatedAt: f.updated_at,
-      }));
+    return c.json({ success: true, data: filesData });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
 
-      return successResponse(filesData);
+// POST /api/files - Upload file
+app.post("/", async (c) => {
+  try {
+    const user = await getUserFromContext(c);
+    if (!user) {
+      return c.json({ success: false, error: "Authentication required" }, 401);
     }
 
-    // POST /api/files - Upload file
-    if (path === "/api/files" && request.method === "POST") {
-      if (!user) {
-        return errorResponse("Authentication required", 401);
+    const contentType = c.req.header("content-type") || "";
+    let filePath: string;
+    let fileContent: ArrayBuffer;
+    let fileName: string;
+
+    // Handle multipart/form-data (file upload from browser)
+    if (contentType.includes("multipart/form-data")) {
+      const formData = await c.req.parseBody();
+      const file = formData["file"];
+      const pathFromForm = formData["path"] as string;
+
+      if (!file || !(file instanceof File)) {
+        return c.json({ success: false, error: "No file provided" }, 400);
       }
 
-      const contentType = request.headers.get("content-type") || "";
+      fileName = file.name;
+      filePath = pathFromForm || `/${user.username}/${fileName}`;
+      fileContent = await file.arrayBuffer();
+    }
+    // Handle JSON (direct content upload)
+    else if (contentType.includes("application/json")) {
+      const body = await c.req.json() as { path: string; content: string };
 
-      let filePath: string;
-      let fileContent: ArrayBuffer;
-      let fileName: string;
-
-      // Handle multipart/form-data (file upload from browser)
-      if (contentType.includes("multipart/form-data")) {
-        const formData = await request.formData();
-        const file = formData.get("file") as File;
-        const pathFromForm = formData.get("path") as string;
-
-        if (!file) {
-          return errorResponse("No file provided", 400);
-        }
-
-        fileName = file.name;
-        filePath = pathFromForm || `/${user.username}/${fileName}`;
-        fileContent = await file.arrayBuffer();
-      }
-      // Handle JSON (direct content upload)
-      else if (contentType.includes("application/json")) {
-        const body = await request.json() as { path: string; content: string };
-
-        if (!body.path || !body.content) {
-          return errorResponse("Path and content are required", 400);
-        }
-
-        filePath = body.path;
-        fileName = filePath.split("/").pop() || "untitled.md";
-        fileContent = new TextEncoder().encode(body.content).buffer;
-      } else {
-        return errorResponse("Unsupported content type", 400);
+      if (!body.path || !body.content) {
+        return c.json({ success: false, error: "Path and content are required" }, 400);
       }
 
-      // Validate file path
-      if (!filePath.startsWith("/")) {
-        filePath = "/" + filePath;
-      }
-
-      // Check if file already exists
-      const existingFile = await env.DB.prepare("SELECT id FROM files WHERE path = ?")
-        .bind(filePath)
-        .first<{ id: string }>();
-
-      if (existingFile) {
-        return errorResponse("File already exists at this path", 409);
-      }
-
-      // Generate R2 key
-      const fileId = generateId();
-      const r2Key = `files/${user.id}/${fileId}`;
-
-      // Upload to R2
-      await env.R2_BUCKET.put(r2Key, fileContent, {
-        httpMetadata: {
-          contentType: fileName.endsWith(".md") ? "text/markdown" : "application/octet-stream",
-        },
-      });
-
-      // Save metadata to D1
-      const now = Math.floor(Date.now() / 1000);
-      await env.DB.prepare(
-        "INSERT INTO files (id, path, owner_id, content_r2_key, size, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
-      )
-        .bind(fileId, filePath, user.id, r2Key, fileContent.byteLength, now, now)
-        .run();
-
-      // Return file metadata
-      return successResponse(
-        {
-          id: fileId,
-          path: filePath,
-          ownerId: user.id,
-          size: fileContent.byteLength,
-          createdAt: now,
-          updatedAt: now,
-        },
-        "File uploaded successfully"
-      );
+      filePath = body.path;
+      fileName = filePath.split("/").pop() || "untitled.md";
+      fileContent = new TextEncoder().encode(body.content).buffer;
+    } else {
+      return c.json({ success: false, error: "Unsupported content type" }, 400);
     }
 
-    // GET /api/files/:path - Get file metadata and content
-    if (path.startsWith("/api/files/") && request.method === "GET") {
-      const encodedPath = path.substring("/api/files/".length);
-      const filePath = decodeURIComponent(encodedPath);
+    // Validate file path
+    if (!filePath.startsWith("/")) {
+      filePath = "/" + filePath;
+    }
 
-      // Get file from database
-      const file = await env.DB.prepare("SELECT * FROM files WHERE path = ?")
-        .bind(filePath)
-        .first<FileRecord>();
+    // Check if file already exists
+    const existingFile = await c.env.DB.prepare("SELECT id FROM files WHERE path = ?")
+      .bind(filePath)
+      .first<{ id: string }>();
 
-      if (!file) {
-        return errorResponse("File not found", 404);
-      }
+    if (existingFile) {
+      return c.json({ success: false, error: "File already exists at this path" }, 409);
+    }
 
-      // Check permission
-      const hasPermission = await checkFilePermission(file.id, user?.id || null, "read", env);
+    // Generate R2 key
+    const fileId = generateId();
+    const r2Key = `files/${user.id}/${fileId}`;
 
-      if (!hasPermission) {
-        return errorResponse("Access denied", 403);
-      }
+    // Upload to R2
+    await c.env.R2_BUCKET.put(r2Key, fileContent, {
+      httpMetadata: {
+        contentType: fileName.endsWith(".md") ? "text/markdown" : "application/octet-stream",
+      },
+    });
 
-      // Get content from R2
-      const r2Object = await env.R2_BUCKET.get(file.content_r2_key);
+    // Save metadata to D1
+    const now = Math.floor(Date.now() / 1000);
+    await c.env.DB.prepare(
+      "INSERT INTO files (id, path, owner_id, content_r2_key, size, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
+    )
+      .bind(fileId, filePath, user.id, r2Key, fileContent.byteLength, now, now)
+      .run();
 
-      if (!r2Object) {
-        return errorResponse("File content not found in storage", 404);
-      }
+    return c.json({
+      success: true,
+      data: {
+        id: fileId,
+        path: filePath,
+        ownerId: user.id,
+        size: fileContent.byteLength,
+        createdAt: now,
+        updatedAt: now,
+      },
+      message: "File uploaded successfully"
+    });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
 
-      const content = await r2Object.text();
+// GET /api/files/:path - Get file metadata and content
+// Using named parameter with regex to capture full path
+app.get("/:filePath{.+}", async (c) => {
+  try {
+    const user = await getUserFromContext(c);
 
-      return successResponse({
+    // Get capture group (relative path)
+    const rawPath = c.req.param("filePath");
+    // Decode it (e.g. %2Ftest%2Fgetfile.md -> /test/getfile.md)
+    let filePath = decodeURIComponent(rawPath);
+
+    // console.log(`[FilesDebug] GET raw: ${rawPath}, decoded: ${filePath}`);
+
+    // Get file from database
+    const file = await c.env.DB.prepare("SELECT * FROM files WHERE path = ?")
+      .bind(filePath)
+      .first<FileRecord>();
+
+    if (!file) {
+      return c.json({ success: false, error: "File not found" }, 404);
+    }
+
+    // Check permission
+    const hasPermission = await checkFilePermission(file.id, user?.id || null, "read", c.env);
+
+    if (!hasPermission) {
+      return c.json({ success: false, error: "Access denied" }, 403);
+    }
+
+    // Get content from R2
+    const r2Object = await c.env.R2_BUCKET.get(file.content_r2_key);
+
+    if (!r2Object) {
+      return c.json({ success: false, error: "File content not found in storage" }, 404);
+    }
+
+    const content = await r2Object.text();
+
+    return c.json({
+      success: true,
+      data: {
         metadata: {
           id: file.id,
           path: file.path,
@@ -266,113 +272,116 @@ export async function filesRouter(
           updatedAt: file.updated_at,
         },
         content,
-      });
-    }
-
-    // PUT /api/files/:path - Update file content
-    if (path.startsWith("/api/files/") && request.method === "PUT") {
-      if (!user) {
-        return errorResponse("Authentication required", 401);
       }
-
-      const encodedPath = path.substring("/api/files/".length);
-      const filePath = decodeURIComponent(encodedPath);
-
-      // Get file from database
-      const file = await env.DB.prepare("SELECT * FROM files WHERE path = ?")
-        .bind(filePath)
-        .first<FileRecord>();
-
-      if (!file) {
-        return errorResponse("File not found", 404);
-      }
-
-      // Check write permission
-      const hasPermission = await checkFilePermission(file.id, user.id, "write", env);
-
-      if (!hasPermission) {
-        return errorResponse("Access denied", 403);
-      }
-
-      // Get new content
-      const body = await request.json() as { content: string };
-
-      if (!body.content) {
-        return errorResponse("Content is required", 400);
-      }
-
-      const newContent = new TextEncoder().encode(body.content).buffer;
-
-      // Update in R2
-      await env.R2_BUCKET.put(file.content_r2_key, newContent, {
-        httpMetadata: {
-          contentType: file.path.endsWith(".md") ? "text/markdown" : "application/octet-stream",
-        },
-      });
-
-      // Update metadata in D1
-      const now = Math.floor(Date.now() / 1000);
-      await env.DB.prepare("UPDATE files SET size = ?, updated_at = ? WHERE id = ?")
-        .bind(newContent.byteLength, now, file.id)
-        .run();
-
-      return successResponse(
-        {
-          id: file.id,
-          path: file.path,
-          ownerId: file.owner_id,
-          size: newContent.byteLength,
-          createdAt: file.created_at,
-          updatedAt: now,
-        },
-        "File updated successfully"
-      );
-    }
-
-    // DELETE /api/files/:path - Delete file
-    if (path.startsWith("/api/files/") && request.method === "DELETE") {
-      if (!user) {
-        return errorResponse("Authentication required", 401);
-      }
-
-      const encodedPath = path.substring("/api/files/".length);
-      const filePath = decodeURIComponent(encodedPath);
-
-      // Get file from database
-      const file = await env.DB.prepare("SELECT * FROM files WHERE path = ?")
-        .bind(filePath)
-        .first<FileRecord>();
-
-      if (!file) {
-        return errorResponse("File not found", 404);
-      }
-
-      // Check write permission (needed to delete)
-      const hasPermission = await checkFilePermission(file.id, user.id, "write", env);
-
-      if (!hasPermission) {
-        return errorResponse("Access denied", 403);
-      }
-
-      // Delete from R2
-      await env.R2_BUCKET.delete(file.content_r2_key);
-
-      // Delete from D1 (cascades to permissions and highlights)
-      await env.DB.prepare("DELETE FROM files WHERE id = ?").bind(file.id).run();
-
-      return successResponse(null, "File deleted successfully");
-    }
-
-    // Route not found in files module
-    return errorResponse(`File route not found: ${path}`, 404);
-  } catch (error) {
-    console.error("Files error:", error);
-    return errorResponse(
-      error instanceof Error ? error.message : "File operation error",
-      500
-    );
+    });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
   }
-}
+});
 
-// Export permission checker for use in other modules
-export { checkFilePermission, getAccessibleFiles };
+// PUT /api/files/:path - Update file content
+app.put("/:filePath{.+}", async (c) => {
+  try {
+    const user = await getUserFromContext(c);
+    if (!user) {
+      return c.json({ success: false, error: "Authentication required" }, 401);
+    }
+
+    const rawPath = c.req.param("filePath");
+    let filePath = decodeURIComponent(rawPath);
+
+    // Get file from database
+    const file = await c.env.DB.prepare("SELECT * FROM files WHERE path = ?")
+      .bind(filePath)
+      .first<FileRecord>();
+
+    if (!file) {
+      return c.json({ success: false, error: "File not found" }, 404);
+    }
+
+    // Check write permission
+    const hasPermission = await checkFilePermission(file.id, user.id, "write", c.env);
+
+    if (!hasPermission) {
+      return c.json({ success: false, error: "Access denied" }, 403);
+    }
+
+    // Get new content
+    const body = await c.req.json() as { content: string };
+
+    if (!body.content) {
+      return c.json({ success: false, error: "Content is required" }, 400);
+    }
+
+    const newContent = new TextEncoder().encode(body.content).buffer;
+
+    // Update in R2
+    await c.env.R2_BUCKET.put(file.content_r2_key, newContent, {
+      httpMetadata: {
+        contentType: file.path.endsWith(".md") ? "text/markdown" : "application/octet-stream",
+      },
+    });
+
+    // Update metadata in D1
+    const now = Math.floor(Date.now() / 1000);
+    await c.env.DB.prepare("UPDATE files SET size = ?, updated_at = ? WHERE id = ?")
+      .bind(newContent.byteLength, now, file.id)
+      .run();
+
+    return c.json({
+      success: true,
+      data: {
+        id: file.id,
+        path: file.path,
+        ownerId: file.owner_id,
+        size: newContent.byteLength,
+        createdAt: file.created_at,
+        updatedAt: now,
+      },
+      message: "File updated successfully"
+    });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+// DELETE /api/files/:path - Delete file
+app.delete("/:filePath{.+}", async (c) => {
+  try {
+    const user = await getUserFromContext(c);
+    if (!user) {
+      return c.json({ success: false, error: "Authentication required" }, 401);
+    }
+
+    const rawPath = c.req.param("filePath");
+    let filePath = decodeURIComponent(rawPath);
+
+    // Get file from database
+    const file = await c.env.DB.prepare("SELECT * FROM files WHERE path = ?")
+      .bind(filePath)
+      .first<FileRecord>();
+
+    if (!file) {
+      return c.json({ success: false, error: "File not found" }, 404);
+    }
+
+    // Check write permission (needed to delete)
+    const hasPermission = await checkFilePermission(file.id, user.id, "write", c.env);
+
+    if (!hasPermission) {
+      return c.json({ success: false, error: "Access denied" }, 403);
+    }
+
+    // Delete from R2
+    await c.env.R2_BUCKET.delete(file.content_r2_key);
+
+    // Delete from D1 (cascades to permissions and highlights)
+    await c.env.DB.prepare("DELETE FROM files WHERE id = ?").bind(file.id).run();
+
+    return c.json({ success: true, message: "File deleted successfully" });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+export { app as filesApp, checkFilePermission, getAccessibleFiles };

@@ -126,17 +126,17 @@
 - [x] Highlight persistence via API
 - [x] Highlight management (create, delete, list)
 
-### 4.4: Link Preview System
-- [ ] Hover preview on desktop (future enhancement)
-- [ ] Long-press preview on mobile
-- [ ] Nested preview support
-- [ ] Loading states
+### 4.4: Link Preview System ✅ COMPLETED
+- [x] Hover preview on desktop
+- [x] Long-press preview on mobile
+- [x] Nested preview support
+- [x] Loading states
 
-### 4.5: Permissions UI
-- [ ] File/folder permissions dialog (future enhancement)
-- [ ] User selector
-- [ ] Public/private toggle
-- [ ] Permission level selector
+### 4.5: Permissions UI ✅ COMPLETED
+- [x] File/folder permissions dialog
+- [x] User selector
+- [x] Public/private toggle
+- [x] Permission level selector
 
 ### 4.6: Admin Dashboard ✅ COMPLETED
 - [x] User management interface
@@ -145,10 +145,11 @@
 - [x] Delete users with confirmation
 - [x] Modal-based user creation
 
-## Phase 5: Real-time Collaboration ✅ COMPLETE
-**Status**: COMPLETE
+## Phase 5: Real-time Collaboration ⏳ IN PROGRESS
+**Status**: IN PROGRESS
 
 - [x] **workers/collaboration.ts** - Durable Objects implementation
+- [ ] **workers/index.ts** - Routing to Durable Object (MISSING)
 - [x] WebSocket connection handling
 - [x] Presence tracking (who's viewing)
 - [x] Live cursor positions broadcasting

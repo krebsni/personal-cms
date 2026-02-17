@@ -15,16 +15,27 @@ vars = { ENVIRONMENT = "development", JWT_SECRET = "dev-secret-key-change-in-pro
 [env.production]
 vars = { ENVIRONMENT = "production" }
 
-# D1 Database bindings
+# D1 Database bindings - Development/Local
 [[d1_databases]]
 binding = "DB"
 database_name = "personal-cms-local"
 database_id = "local"
 
-# R2 Storage bindings
+# D1 Database bindings - Production
+[env.production.d1_databases]
+binding = "DB"
+database_name = "personal-cms-prod"
+database_id = "PROD_DB_ID_GOES_HERE" # Update with actual ID
+
+# R2 Storage bindings - Development/Local
 [[r2_buckets]]
 binding = "R2_BUCKET"
 bucket_name = "personal-cms-files-local"
+
+# R2 Storage bindings - Production
+[env.production.r2_buckets]
+binding = "R2_BUCKET"
+bucket_name = "personal-cms-files-prod"
 
 # Durable Objects for real-time collaboration
 [[durable_objects.bindings]]

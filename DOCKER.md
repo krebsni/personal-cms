@@ -87,7 +87,7 @@ The backend uses local D1 (SQLite) which is automatically initialized on first r
 
 ```bash
 # Execute migrations inside the backend container
-docker-compose exec backend npx wrangler d1 execute personal-cms-dev --local --file=./migrations/001_initial_schema.sql
+docker-compose exec backend npx wrangler d1 execute personal-cms-dev --local --file=./migrations/0001_initial.sql
 ```
 
 ### Access Database

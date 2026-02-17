@@ -57,10 +57,19 @@ describe("Authentication API", () => {
     });
 
     it("should reject registration with duplicate email", async () => {
+      // Register the user first
+      await SELF.fetch(createTestRequest("POST", "/api/auth/register", {
+        body: {
+          username: "user_for_dup",
+          email: "dup@test.com",
+          password: "password123",
+        },
+      }));
+
       const request = createTestRequest("POST", "/api/auth/register", {
         body: {
           username: "anotheruser",
-          email: testUsers.user.email, // Same email as before
+          email: "dup@test.com", // Same email as before
           password: "password123",
         },
       });
@@ -109,10 +118,19 @@ describe("Authentication API", () => {
 
   describe("POST /api/auth/login", () => {
     it("should login successfully with correct credentials", async () => {
+      // Ensure user exists
+      await SELF.fetch(createTestRequest("POST", "/api/auth/register", {
+        body: {
+          username: "login_user",
+          email: "login@test.com",
+          password: "password123",
+        },
+      }));
+
       const request = createTestRequest("POST", "/api/auth/login", {
         body: {
-          email: testUsers.user.email,
-          password: testUsers.user.password,
+          email: "login@test.com",
+          password: "password123",
         },
       });
 
@@ -121,7 +139,7 @@ describe("Authentication API", () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data.email).toBe(testUsers.user.email);
+      expect(data.data.email).toBe("login@test.com");
       expect(data.message).toBe("Login successful");
 
       const cookies = getCookiesFromResponse(response);
@@ -164,10 +182,20 @@ describe("Authentication API", () => {
   describe("GET /api/auth/me", () => {
     it("should return current user when authenticated", async () => {
       // Login first
+      // Register and login
+      const uniqueEmail = `me_${Date.now()}@test.com`;
+      await SELF.fetch(createTestRequest("POST", "/api/auth/register", {
+        body: {
+          username: `me_${Date.now()}`,
+          email: uniqueEmail,
+          password: "password123",
+        },
+      }));
+
       const loginRequest = createTestRequest("POST", "/api/auth/login", {
         body: {
-          email: testUsers.user.email,
-          password: testUsers.user.password,
+          email: uniqueEmail,
+          password: "password123",
         },
       });
 
@@ -184,7 +212,7 @@ describe("Authentication API", () => {
 
       expect(response.status).toBe(200);
       expect(data.success).toBe(true);
-      expect(data.data.email).toBe(testUsers.user.email);
+      expect(data.data.email).toBe(uniqueEmail);
     });
 
     it("should reject when not authenticated", async () => {
@@ -201,10 +229,20 @@ describe("Authentication API", () => {
   describe("POST /api/auth/logout", () => {
     it("should logout successfully and clear cookie", async () => {
       // Login first
+      // Register and login
+      const uniqueEmail = `logout_${Date.now()}@test.com`;
+      await SELF.fetch(createTestRequest("POST", "/api/auth/register", {
+        body: {
+          username: `logout_${Date.now()}`,
+          email: uniqueEmail,
+          password: "password123",
+        },
+      }));
+
       const loginRequest = createTestRequest("POST", "/api/auth/login", {
         body: {
-          email: testUsers.user.email,
-          password: testUsers.user.password,
+          email: uniqueEmail,
+          password: "password123",
         },
       });
 
@@ -234,6 +272,11 @@ describe("Authentication API", () => {
 
       const meResponse = await SELF.fetch(meRequest);
       const meData = await getResponseJson(meResponse);
+
+      if (meResponse.status === 200) {
+        console.error("ME request after logout succeeded (unexpected).");
+        console.error("User data:", JSON.stringify(meData, null, 2));
+      }
 
       expect(meResponse.status).toBe(401);
       expect(meData.success).toBe(false);

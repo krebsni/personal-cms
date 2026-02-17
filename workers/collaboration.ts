@@ -1,4 +1,6 @@
 // Collaboration Durable Object - Real-time collaboration for document editing
+import { Hono } from "hono";
+import { upgradeWebSocket } from "hono/cloudflare-workers";
 import type { Env } from "./index";
 
 interface Session {
@@ -19,39 +21,53 @@ interface Message {
   timestamp: number;
 }
 
+const app = new Hono<{ Bindings: Env }>();
+
 export class CollaborationRoom {
   private state: DurableObjectState;
   private env: Env;
   private sessions: Map<string, Session>;
+  private app: Hono<{ Bindings: Env }>;
 
   constructor(state: DurableObjectState, env: Env) {
     this.state = state;
     this.env = env;
     this.sessions = new Map();
+
+    // Initialize Hono app for this DO
+    this.app = new Hono<{ Bindings: Env }>();
+
+    // WebSocket upgrade route
+    this.app.get("/", async (c) => {
+      if (c.req.header("Upgrade") === "websocket") {
+        const pair = new WebSocketPair();
+        const [client, server] = Object.values(pair);
+
+        await this.handleWebSocket(server, c.req.raw);
+
+        return new Response(null, {
+          status: 101,
+          webSocket: client,
+        });
+      }
+      return c.text("Expected WebSocket", 400);
+    });
+
+    // Presence API
+    this.app.get("/presence", (c) => {
+      const presence = Array.from(this.sessions.values()).map((session) => ({
+        userId: session.userId,
+        username: session.username,
+        fileId: session.fileId,
+        cursorPosition: session.cursorPosition,
+        lastSeen: session.lastSeen,
+      }));
+      return c.json({ presence });
+    });
   }
 
   async fetch(request: Request): Promise<Response> {
-    const url = new URL(request.url);
-
-    // WebSocket upgrade
-    if (request.headers.get("Upgrade") === "websocket") {
-      const pair = new WebSocketPair();
-      const [client, server] = Object.values(pair);
-
-      await this.handleWebSocket(server, request);
-
-      return new Response(null, {
-        status: 101,
-        webSocket: client,
-      });
-    }
-
-    // HTTP endpoints
-    if (url.pathname === "/presence") {
-      return this.getPresence();
-    }
-
-    return new Response("Not found", { status: 404 });
+    return this.app.fetch(request, this.env);
   }
 
   private async handleWebSocket(websocket: WebSocket, request: Request): Promise<void> {
@@ -190,19 +206,5 @@ export class CollaborationRoom {
         timestamp: Date.now(),
       })
     );
-  }
-
-  private getPresence(): Response {
-    const presence = Array.from(this.sessions.values()).map((session) => ({
-      userId: session.userId,
-      username: session.username,
-      fileId: session.fileId,
-      cursorPosition: session.cursorPosition,
-      lastSeen: session.lastSeen,
-    }));
-
-    return new Response(JSON.stringify({ presence }), {
-      headers: { "Content-Type": "application/json" },
-    });
   }
 }

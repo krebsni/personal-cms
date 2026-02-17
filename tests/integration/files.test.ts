@@ -148,6 +148,15 @@ describe("Files API", () => {
 
   describe("GET /api/files", () => {
     it("should list user's files", async () => {
+      // Upload a file first to ensure list is not empty
+      await SELF.fetch(createTestRequest("POST", "/api/files", {
+        body: {
+          path: "/test/list-file.md",
+          content: "File for list test",
+        },
+        cookies: { token: userToken },
+      }));
+
       const request = createTestRequest("GET", "/api/files", {
         cookies: { token: userToken },
       });

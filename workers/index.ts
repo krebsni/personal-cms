@@ -1,123 +1,89 @@
 // Main Cloudflare Worker - API Router
-import { authRouter } from "./auth";
-import { filesRouter } from "./files";
-import { permissionsRouter } from "./permissions";
-import { highlightsRouter } from "./highlights";
-import { adminRouter } from "./admin";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import { logger } from "hono/logger";
+import { prettyJSON } from "hono/pretty-json";
+import { secureHeaders } from "hono/secure-headers";
+import type { Env } from "./types";
 
-// Environment bindings from wrangler.toml
-export interface Env {
-  DB: D1Database;
-  R2_BUCKET: R2Bucket;
-  COLLABORATION_ROOM: DurableObjectNamespace;
-  JWT_SECRET: string;
-  ENVIRONMENT: string;
-}
+import { authApp } from "./auth";
+import { filesApp } from "./files";
+import { permissionsApp } from "./permissions";
+import { highlightsApp } from "./highlights";
+import { adminApp } from "./admin";
+import { CollaborationRoom } from "./collaboration";
 
-// CORS headers for all responses
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*", // TODO: Restrict in production
-  "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
-  "Access-Control-Allow-Credentials": "true",
-};
+const app = new Hono<{ Bindings: Env }>();
 
-// Add CORS headers to response
-function addCorsHeaders(response: Response): Response {
-  const newResponse = new Response(response.body, response);
-  Object.entries(corsHeaders).forEach(([key, value]) => {
-    newResponse.headers.set(key, value);
+// Middleware
+app.use("*", logger());
+app.use("*", prettyJSON());
+app.use("*", secureHeaders());
+app.use("*", cors({
+  origin: "*", // TODO: Restrict in production
+  allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+}));
+
+// Mount API routes
+// Note: Hono's route() mounts the app.
+// Since we defined sub-apps with their own routes, we mount them at specific prefixes.
+
+app.route("/api/auth", authApp);
+app.route("/api/files", filesApp);
+app.route("/api/permissions", permissionsApp);
+app.route("/api/highlights", highlightsApp);
+app.route("/api/highlights", highlightsApp);
+app.route("/api/admin", adminApp);
+
+// Collaboration Route (Durable Object)
+app.all("/api/collaboration/:fileId/*", (c) => {
+  const fileId = c.req.param("fileId");
+  const id = c.env.COLLABORATION_ROOM.idFromName(fileId);
+  const stub = c.env.COLLABORATION_ROOM.get(id);
+
+  // Rewrite URL to match what the DO expects (strip prefix)
+  // The DO is mounted at /, so we strip /api/collaboration/:fileId
+  // The wildcard * will be the path inside the DO
+  const url = new URL(c.req.url);
+  url.pathname = url.pathname.replace(`/api/collaboration/${fileId}`, "");
+  if (url.pathname === "") url.pathname = "/";
+
+  return stub.fetch(new Request(url.toString(), c.req.raw));
+});
+
+// Health check endpoint
+app.get("/health", (c) => {
+  return c.json({
+    status: "ok",
+    environment: c.env.ENVIRONMENT || "development",
+    timestamp: Date.now(),
   });
-  return newResponse;
-}
+});
 
-// JSON response helper
-function jsonResponse(data: unknown, status = 200): Response {
-  return addCorsHeaders(
-    new Response(JSON.stringify(data), {
-      status,
-      headers: { "Content-Type": "application/json" },
-    })
-  );
-}
+app.get("/", (c) => {
+  return c.json({
+    message: "Personal CMS API",
+    status: "online",
+    docs: "/api/docs"
+  });
+});
 
-// Error response helper
-function errorResponse(error: string, status = 400): Response {
-  return jsonResponse({ success: false, error }, status);
-}
+// 404 Handler
+app.notFound((c) => {
+  return c.json({ success: false, error: `Route not found: ${c.req.path}` }, 404);
+});
 
-// Success response helper
-function successResponse(data: unknown, message?: string): Response {
-  return jsonResponse({ success: true, data, message });
-}
+// Error Handler
+app.onError((err, c) => {
+  console.error("Worker error:", err);
+  return c.json({
+    success: false,
+    error: err instanceof Error ? err.message : "Internal server error"
+  }, 500);
+});
 
-export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
-    // Handle CORS preflight
-    if (request.method === "OPTIONS") {
-      return new Response(null, { headers: corsHeaders });
-    }
-
-    const url = new URL(request.url);
-    const path = url.pathname;
-
-    try {
-      // Health check endpoint
-      if (path === "/health" || path === "/") {
-        return successResponse({
-          status: "ok",
-          environment: env.ENVIRONMENT || "development",
-          timestamp: Date.now(),
-        });
-      }
-
-      // Auth routes
-      if (path.startsWith("/api/auth")) {
-        return await authRouter(request, env, { successResponse, errorResponse });
-      }
-
-      // Files routes
-      if (path.startsWith("/api/files")) {
-        return await filesRouter(request, env, { successResponse, errorResponse });
-      }
-
-      // Permissions routes
-      if (path.startsWith("/api/permissions")) {
-        return await permissionsRouter(request, env, { successResponse, errorResponse });
-      }
-
-      // Highlights routes
-      if (path.startsWith("/api/highlights")) {
-        return await highlightsRouter(request, env, { successResponse, errorResponse });
-      }
-
-      // Config routes (public)
-      if (path.startsWith("/api/config")) {
-        return errorResponse("Config API not yet implemented", 501);
-      }
-
-      // Admin routes
-      if (path.startsWith("/api/admin")) {
-        return await adminRouter(request, env, { successResponse, errorResponse });
-      }
-
-      // 404 - Route not found
-      return errorResponse(`Route not found: ${path}`, 404);
-    } catch (error) {
-      console.error("Worker error:", error);
-      return errorResponse(
-        error instanceof Error ? error.message : "Internal server error",
-        500
-      );
-    }
-  },
-};
-
-// Export response helpers for use in route modules
-export type ResponseHelpers = {
-  successResponse: typeof successResponse;
-  errorResponse: typeof errorResponse;
-};
-
-// Export Durable Object for collaboration
-export { CollaborationRoom } from "./collaboration";
+export default app;
+export type { Env };
+export { CollaborationRoom };

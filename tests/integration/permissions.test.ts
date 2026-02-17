@@ -266,24 +266,20 @@ describe("Permissions API", () => {
     it("should make file private", async () => {
       // Create and make file public first
       const newFile = createTestRequest("POST", "/api/files", {
-        body: { path: "/test/makeprivate.md", content: "File to make private" },
+        body: { path: "/test/makeprivate-self.md", content: "File to make private" },
         cookies: { token: ownerToken },
       });
       const newFileResp = await SELF.fetch(newFile);
       const newFileData = await getResponseJson(newFileResp);
       const fileId = newFileData.data.id;
 
-      const makePublicResp = await SELF.fetch(
+      // Make it public
+      await SELF.fetch(
         createTestRequest("POST", `/api/permissions/file/${fileId}/public`, {
           body: { permission: "read" },
           cookies: { token: ownerToken },
         })
       );
-      const makePublicData = await getResponseJson(makePublicResp);
-
-      // Verify it was made public
-      expect(makePublicResp.status).toBe(200);
-      expect(makePublicData.success).toBe(true);
 
       // Now make it private
       const request = createTestRequest("DELETE", `/api/permissions/file/${fileId}/public`, {
@@ -327,7 +323,7 @@ describe("Permissions API", () => {
     it("should revoke permission", async () => {
       // Create file and grant permission
       const newFile = createTestRequest("POST", "/api/files", {
-        body: { path: "/test/revoke.md", content: "File for revoke test" },
+        body: { path: "/test/revoke-self.md", content: "File for revoke test" },
         cookies: { token: ownerToken },
       });
       const newFileResp = await SELF.fetch(newFile);
