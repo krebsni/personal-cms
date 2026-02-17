@@ -41,7 +41,6 @@ bucket_name = "personal-cms-files-prod"
 [[durable_objects.bindings]]
 name = "COLLABORATION_ROOM"
 class_name = "CollaborationRoom"
-script_name = "personal-cms-workers"
 
 [[migrations]]
 tag = "v1"

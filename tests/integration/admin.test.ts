@@ -8,6 +8,11 @@ describe("Admin API", () => {
   let adminId: string;
   let userToken: string;
   let userId: string;
+  const timestamp = Date.now();
+  const adminEmail = `admin-${timestamp}@test.com`;
+  const userEmail = `user-${timestamp}@test.com`;
+  const adminUsername = `admin-${timestamp}`;
+  const userUsername = `user-${timestamp}`;
 
   beforeAll(async () => {
     // Apply migrations
@@ -46,10 +51,11 @@ describe("Admin API", () => {
 
     // Register admin user
     const adminRegister = createTestRequest("POST", "/api/auth/register", {
-      body: { username: "testadmin", email: "admin@test.com", password: "password123" },
+      body: { username: adminUsername, email: adminEmail, password: "password123" },
     });
     const adminRegResponse = await SELF.fetch(adminRegister);
     const adminData = await getResponseJson(adminRegResponse);
+    if (!adminData.success) throw new Error(`Admin registration failed: ${adminData.error}`);
     adminId = adminData.data.id;
 
     // Manually update user to admin role
@@ -58,7 +64,7 @@ describe("Admin API", () => {
       .run();
 
     const adminLogin = createTestRequest("POST", "/api/auth/login", {
-      body: { email: "admin@test.com", password: "password123" },
+      body: { email: adminEmail, password: "password123" },
     });
     const adminLoginResponse = await SELF.fetch(adminLogin);
     const adminCookies = getCookiesFromResponse(adminLoginResponse);
@@ -66,14 +72,15 @@ describe("Admin API", () => {
 
     // Register regular user
     const userRegister = createTestRequest("POST", "/api/auth/register", {
-      body: { username: "testuser", email: "user@test.com", password: "password123" },
+      body: { username: userUsername, email: userEmail, password: "password123" },
     });
     const userRegResponse = await SELF.fetch(userRegister);
     const userData = await getResponseJson(userRegResponse);
+    if (!userData.success) throw new Error(`User registration failed: ${userData.error}`);
     userId = userData.data.id;
 
     const userLogin = createTestRequest("POST", "/api/auth/login", {
-      body: { email: "user@test.com", password: "password123" },
+      body: { email: userEmail, password: "password123" },
     });
     const userLoginResponse = await SELF.fetch(userLogin);
     const userCookies = getCookiesFromResponse(userLoginResponse);
@@ -128,10 +135,13 @@ describe("Admin API", () => {
 
     describe("POST /api/admin/users", () => {
       it("should create new user as admin", async () => {
+        const newUsername = `newuser-${Date.now()}`;
+        const newEmail = `newuser-${Date.now()}@test.com`;
+
         const request = createTestRequest("POST", "/api/admin/users", {
           body: {
-            username: "newuser",
-            email: "newuser@test.com",
+            username: newUsername,
+            email: newEmail,
             password: "password123",
             role: "user",
           },
@@ -143,17 +153,20 @@ describe("Admin API", () => {
 
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
-        expect(data.data.username).toBe("newuser");
-        expect(data.data.email).toBe("newuser@test.com");
+        expect(data.data.username).toBe(newUsername);
+        expect(data.data.email).toBe(newEmail);
         expect(data.data.role).toBe("user");
         expect(data.message).toContain("created");
       });
 
       it("should create admin user", async () => {
+        const newAdminName = `newadmin-${Date.now()}`;
+        const newAdminEmail = `newadmin-${Date.now()}@test.com`;
+
         const request = createTestRequest("POST", "/api/admin/users", {
           body: {
-            username: "newadmin",
-            email: "newadmin@test.com",
+            username: newAdminName,
+            email: newAdminEmail,
             password: "password123",
             role: "admin",
           },
@@ -166,13 +179,14 @@ describe("Admin API", () => {
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
         expect(data.data.role).toBe("admin");
+        expect(data.data.username).toBe(newAdminName);
       });
 
       it("should reject duplicate username", async () => {
         const request = createTestRequest("POST", "/api/admin/users", {
           body: {
-            username: "testuser", // Already exists
-            email: "different@test.com",
+            username: userUsername, // Already exists
+            email: `different-${Date.now()}@test.com`,
             password: "password123",
           },
           cookies: { token: adminToken },
@@ -189,8 +203,8 @@ describe("Admin API", () => {
       it("should reject duplicate email", async () => {
         const request = createTestRequest("POST", "/api/admin/users", {
           body: {
-            username: "differentuser",
-            email: "user@test.com", // Already exists
+            username: `differentuser-${Date.now()}`,
+            email: userEmail, // Already exists
             password: "password123",
           },
           cookies: { token: adminToken },
@@ -207,8 +221,8 @@ describe("Admin API", () => {
       it("should reject short password", async () => {
         const request = createTestRequest("POST", "/api/admin/users", {
           body: {
-            username: "shortpass",
-            email: "shortpass@test.com",
+            username: `shortpass-${Date.now()}`,
+            email: `shortpass-${Date.now()}@test.com`,
             password: "short",
           },
           cookies: { token: adminToken },
@@ -246,8 +260,8 @@ describe("Admin API", () => {
         const createResp = await SELF.fetch(
           createTestRequest("POST", "/api/admin/users", {
             body: {
-              username: "roletest",
-              email: "roletest@test.com",
+              username: `roletest-${Date.now()}`,
+              email: `roletest-${Date.now()}@test.com`,
               password: "password123",
             },
             cookies: { token: adminToken },
@@ -276,8 +290,8 @@ describe("Admin API", () => {
         const createResp = await SELF.fetch(
           createTestRequest("POST", "/api/admin/users", {
             body: {
-              username: "oldname",
-              email: "oldname@test.com",
+              username: `oldname-${Date.now()}`,
+              email: `oldname-${Date.now()}@test.com`,
               password: "password123",
             },
             cookies: { token: adminToken },
@@ -287,8 +301,9 @@ describe("Admin API", () => {
         const testUserId = createData.data.id;
 
         // Update username
+        const newName = `newname-${Date.now()}`;
         const request = createTestRequest("PUT", `/api/admin/users/${testUserId}`, {
-          body: { username: "newname" },
+          body: { username: newName },
           cookies: { token: adminToken },
         });
 
@@ -297,7 +312,7 @@ describe("Admin API", () => {
 
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
-        expect(data.data.username).toBe("newname");
+        expect(data.data.username).toBe(newName);
       });
 
       it("should return 404 for non-existent user", async () => {
@@ -321,8 +336,8 @@ describe("Admin API", () => {
         const createResp = await SELF.fetch(
           createTestRequest("POST", "/api/admin/users", {
             body: {
-              username: "todelete",
-              email: "todelete@test.com",
+              username: `todelete-${Date.now()}`,
+              email: `todelete-${Date.now()}@test.com`,
               password: "password123",
             },
             cookies: { token: adminToken },
@@ -401,9 +416,10 @@ describe("Admin API", () => {
 
     describe("POST /api/admin/colors", () => {
       it("should create color", async () => {
+        const colorName = `Yellow-${Date.now()}`;
         const request = createTestRequest("POST", "/api/admin/colors", {
           body: {
-            name: "Yellow",
+            name: colorName,
             hexCode: "#FFFF00",
             isDefault: true,
             displayOrder: 1,
@@ -416,7 +432,7 @@ describe("Admin API", () => {
 
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
-        expect(data.data.name).toBe("Yellow");
+        expect(data.data.name).toBe(colorName);
         expect(data.data.hexCode).toBe("#FFFF00");
         expect(data.data.isDefault).toBe(true);
         expect(data.data.displayOrder).toBe(1);
@@ -441,17 +457,18 @@ describe("Admin API", () => {
       });
 
       it("should reject duplicate color name", async () => {
+        const colorName = `Red-${Date.now()}`;
         // Create first color
         await SELF.fetch(
           createTestRequest("POST", "/api/admin/colors", {
-            body: { name: "Red", hexCode: "#FF0000" },
+            body: { name: colorName, hexCode: "#FF0000" },
             cookies: { token: adminToken },
           })
         );
 
         // Try to create duplicate
         const request = createTestRequest("POST", "/api/admin/colors", {
-          body: { name: "Red", hexCode: "#FF0001" },
+          body: { name: colorName, hexCode: "#FF0001" },
           cookies: { token: adminToken },
         });
 
@@ -466,10 +483,11 @@ describe("Admin API", () => {
 
     describe("PUT /api/admin/colors/:id", () => {
       it("should update color", async () => {
+        const colorName = `Green-${Date.now()}`;
         // Create a color to update
         const createResp = await SELF.fetch(
           createTestRequest("POST", "/api/admin/colors", {
-            body: { name: "Green", hexCode: "#00FF00" },
+            body: { name: colorName, hexCode: "#00FF00" },
             cookies: { token: adminToken },
           })
         );
@@ -477,9 +495,10 @@ describe("Admin API", () => {
         const colorId = createData.data.id;
 
         // Update color
+        const newColorName = `Dark Green-${Date.now()}`;
         const request = createTestRequest("PUT", `/api/admin/colors/${colorId}`, {
           body: {
-            name: "Dark Green",
+            name: newColorName,
             hexCode: "#008000",
             displayOrder: 5,
           },
@@ -491,7 +510,7 @@ describe("Admin API", () => {
 
         expect(response.status).toBe(200);
         expect(data.success).toBe(true);
-        expect(data.data.name).toBe("Dark Green");
+        expect(data.data.name).toBe(newColorName);
         expect(data.data.hexCode).toBe("#008000");
         expect(data.data.displayOrder).toBe(5);
       });
@@ -515,7 +534,7 @@ describe("Admin API", () => {
         // Create a color to delete
         const createResp = await SELF.fetch(
           createTestRequest("POST", "/api/admin/colors", {
-            body: { name: "ToDelete", hexCode: "#123456" },
+            body: { name: `ToDelete-${Date.now()}`, hexCode: "#123456" },
             cookies: { token: adminToken },
           })
         );
