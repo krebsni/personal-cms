@@ -1,6 +1,6 @@
 // Authentication module for Cloudflare Workers
 import { Hono } from "hono";
-import { setCookie, deleteCookie } from "hono/cookie";
+import { setCookie, deleteCookie, getCookie } from "hono/cookie";
 import { sign, verify } from "hono/jwt";
 import bcrypt from "bcryptjs";
 import type { Env, User } from "./types";
@@ -32,7 +32,7 @@ async function getUserFromContext(c: any): Promise<User | null> {
   let token: string | null = null;
 
   // Try cookie
-  const cookieToken = c.req.header("Cookie")?.match(/token=([^;]+)/)?.[1];
+  const cookieToken = getCookie(c, "token");
   if (cookieToken) {
     token = cookieToken;
   }
@@ -167,16 +167,19 @@ app.post("/register", async (c) => {
     const token = await generateToken(user, c.env.JWT_SECRET);
     const { password_hash: _, ...userData } = user;
 
+    const isDev = c.env.ENVIRONMENT === "development";
+
     setCookie(c, "token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "Strict",
+      secure: !isDev, // Allow non-secure in dev
+      sameSite: isDev ? "Lax" : "Strict", // Lax for dev to allow easier navigation
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
     });
 
     return c.json({ success: true, data: userData, message: "User registered successfully" });
   } catch (e: any) {
+    console.error("Get user failed:", e);
     return c.json({ success: false, error: e.message }, 500);
   }
 });
@@ -216,16 +219,19 @@ app.post("/login", async (c) => {
 
     const { password_hash: _, ...userData } = user;
 
+    const isDev = c.env.ENVIRONMENT === "development";
+
     setCookie(c, "token", token, {
       httpOnly: true,
-      secure: true,
-      sameSite: "Strict",
+      secure: !isDev,
+      sameSite: isDev ? "Lax" : "Strict",
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
     });
 
     return c.json({ success: true, data: userData, message: "Login successful" });
   } catch (e: any) {
+    console.error("Get user failed:", e);
     return c.json({ success: false, error: e.message }, 500);
   }
 });
@@ -242,15 +248,18 @@ app.post("/logout", async (c) => {
         .run();
     }
 
+    const isDev = c.env.ENVIRONMENT === "development";
+
     deleteCookie(c, "token", {
       path: "/",
-      secure: true,
+      secure: !isDev,
       httpOnly: true,
-      sameSite: "Strict"
+      sameSite: isDev ? "Lax" : "Strict"
     });
 
     return c.json({ success: true, message: "Logged out successfully" });
   } catch (e: any) {
+    console.error("Get user failed:", e);
     return c.json({ success: false, error: e.message }, 500);
   }
 });
@@ -267,6 +276,7 @@ app.get("/me", async (c) => {
     const { password_hash: _, ...userData } = user;
     return c.json({ success: true, data: userData });
   } catch (e: any) {
+    console.error("Get user failed:", e);
     return c.json({ success: false, error: e.message }, 500);
   }
 });

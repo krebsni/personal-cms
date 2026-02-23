@@ -22,7 +22,7 @@ export const useAuthStore = create<AuthStore>((set) => ({
   user: null,
   isAuthenticated: false,
   isAdmin: false,
-  isLoading: false,
+  isLoading: true, // Start loading by default
   error: null,
 
   login: async (credentials: LoginCredentials) => {
@@ -94,16 +94,25 @@ export const useAuthStore = create<AuthStore>((set) => ({
   checkAuth: async () => {
     set({ isLoading: true });
 
-    const response = await api.getCurrentUser();
+    try {
+      const response = await api.getCurrentUser();
 
-    if (response.success && response.data) {
-      set({
-        user: response.data,
-        isAuthenticated: true,
-        isAdmin: response.data.role === "admin",
-        isLoading: false,
-      });
-    } else {
+      if (response.success && response.data) {
+        set({
+          user: response.data,
+          isAuthenticated: true,
+          isAdmin: response.data.role === "admin",
+          isLoading: false,
+        });
+      } else {
+        set({
+          user: null,
+          isAuthenticated: false,
+          isAdmin: false,
+          isLoading: false,
+        });
+      }
+    } catch (error) {
       set({
         user: null,
         isAuthenticated: false,

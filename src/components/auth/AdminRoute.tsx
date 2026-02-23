@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../../stores/authStore";
 
@@ -7,12 +6,10 @@ interface AdminRouteProps {
 }
 
 export function AdminRoute({ children }: AdminRouteProps) {
-  const { isAuthenticated, isAdmin, isLoading, checkAuth } = useAuthStore();
+  const { isAuthenticated, isAdmin, isLoading } = useAuthStore();
   const location = useLocation();
 
-  useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+
 
   if (isLoading) {
     return (

@@ -18,6 +18,13 @@ interface Highlight {
   updated_at: number;
 }
 
+interface HighlightColor {
+  id: string;
+  name: string;
+  hex_code: string;
+  sort_order: number;
+}
+
 
 
 const app = new Hono<{ Bindings: Env }>();
@@ -239,6 +246,27 @@ app.delete("/:id", async (c) => {
     await c.env.DB.prepare("DELETE FROM highlights WHERE id = ?").bind(highlightId).run();
 
     return c.json({ success: true, message: "Highlight deleted" });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
+// GET /api/highlights/colors - Get highlight colors
+app.get("/colors", async (c) => {
+  try {
+    const colors = await c.env.DB.prepare(
+      "SELECT * FROM highlight_colors ORDER BY sort_order ASC"
+    ).all<HighlightColor>();
+
+    return c.json({
+      success: true,
+      data: (colors.results || []).map(color => ({
+        id: color.id,
+        name: color.name,
+        hexCode: color.hex_code,
+        sortOrder: color.sort_order
+      }))
+    });
   } catch (e: any) {
     return c.json({ success: false, error: e.message }, 500);
   }

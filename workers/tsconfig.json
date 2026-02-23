@@ -3,7 +3,7 @@
   "compilerOptions": {
     "outDir": "../dist-worker",
     "target": "esnext",
-    "lib": ["esnext"],
+    "lib": ["esnext", "webworker"],
     "module": "esnext",
     "moduleResolution": "bundler",
     "types": ["@cloudflare/workers-types"]

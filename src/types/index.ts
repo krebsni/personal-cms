@@ -76,5 +76,6 @@ export interface HighlightColor {
   id: string;
   name: string;
   hexCode: string;
+  isDefault: boolean;
   sortOrder: number;
 }

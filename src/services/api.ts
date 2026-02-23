@@ -18,7 +18,7 @@ class ApiClient {
     this.baseUrl = baseUrl;
   }
 
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
+  async request<T>(endpoint: string, options: RequestInit = {}): Promise<ApiResponse<T>> {
     try {
       const response = await fetch(`${this.baseUrl}${endpoint}`, {
         ...options,
@@ -132,7 +132,7 @@ class ApiClient {
   }
 
   async createHighlight(
-    highlight: Omit<Highlight, "id" | "createdAt" | "updatedAt">
+    highlight: Omit<Highlight, "id" | "createdAt" | "updatedAt" | "userId">
   ): Promise<ApiResponse<Highlight>> {
     return this.request<Highlight>("/api/highlights", {
       method: "POST",
@@ -155,20 +155,20 @@ class ApiClient {
 
   // Highlight colors (admin)
   async getHighlightColors(): Promise<ApiResponse<HighlightColor[]>> {
-    return this.request<HighlightColor[]>("/api/config/colors");
+    return this.request<HighlightColor[]>("/api/highlights/colors");
   }
 
   async createHighlightColor(
     color: Omit<HighlightColor, "id">
   ): Promise<ApiResponse<HighlightColor>> {
-    return this.request<HighlightColor>("/api/admin/config/colors", {
+    return this.request<HighlightColor>("/api/admin/colors", {
       method: "POST",
       body: JSON.stringify(color),
     });
   }
 
   async deleteHighlightColor(id: string): Promise<ApiResponse<void>> {
-    return this.request<void>(`/api/admin/config/colors/${id}`, {
+    return this.request<void>(`/api/admin/colors/${id}`, {
       method: "DELETE",
     });
   }

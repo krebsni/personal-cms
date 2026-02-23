@@ -4,10 +4,12 @@ import type { FileMetadata } from "../../types";
 
 interface FileListProps {
   files: FileMetadata[];
+  onSelect: (file: FileMetadata) => void;
+  selectedFileId?: string;
   onDelete: (path: string) => void;
 }
 
-export default function FileList({ files, onDelete }: FileListProps) {
+export default function FileList({ files, onSelect, selectedFileId, onDelete }: FileListProps) {
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return "0 B";
     const k = 1024;
@@ -57,70 +59,63 @@ export default function FileList({ files, onDelete }: FileListProps) {
   };
 
   return (
-    <div className="bg-white shadow-sm rounded-lg border border-gray-200">
-      <div className="overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+    <div className="bg-white dark:bg-gray-800 shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col h-full">
+      <div className="overflow-y-auto flex-1">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+          <thead className="bg-gray-50 dark:bg-gray-900 sticky top-0">
             <tr>
               <th
                 scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
               >
                 Name
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Size
-              </th>
-              <th
-                scope="col"
-                className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-              >
-                Modified
               </th>
               <th scope="col" className="relative px-6 py-3">
                 <span className="sr-only">Actions</span>
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {files.map((file) => (
-              <tr key={file.id} className="hover:bg-gray-50 transition-colors">
+              <tr
+                key={file.id}
+                className={`hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cursor-pointer ${
+                  selectedFileId === file.id ? "bg-blue-50 dark:bg-blue-900/20" : ""
+                }`}
+                onClick={() => onSelect(file)}
+              >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     <span className="text-2xl mr-3">{getFileIcon(file.path)}</span>
-                    <div>
-                      <Link
-                        to={`/editor${file.path}`}
-                        className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                      >
+                    <div className="overflow-hidden">
+                      <div className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[150px]" title={file.path}>
                         {file.path.split("/").pop()}
-                      </Link>
-                      <div className="text-xs text-gray-500">{file.path}</div>
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[150px]">
+                        {formatDate(file.updatedAt)} • {formatFileSize(file.size)}
+                      </div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatFileSize(file.size)}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {formatDate(file.updatedAt)}
-                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link
-                    to={`/editor${file.path}`}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
-                  >
-                    Open
-                  </Link>
-                  <button
-                    onClick={() => onDelete(file.path)}
-                    className="text-red-600 hover:text-red-900"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex flex-col gap-2 items-end">
+                    <Link
+                      to={`/editor${file.path}`}
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Edit
+                    </Link>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete(file.path);
+                      }}
+                      className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}

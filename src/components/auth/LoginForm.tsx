@@ -8,7 +8,7 @@ export function LoginForm() {
   const { login, isLoading, error, clearError } = useAuthStore();
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent | React.KeyboardEvent) => {
     e.preventDefault();
     clearError();
 
@@ -16,6 +16,12 @@ export function LoginForm() {
 
     if (success) {
       navigate("/");
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSubmit(e);
     }
   };
 
@@ -70,6 +76,7 @@ export function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-white bg-white dark:bg-gray-800 rounded-lg focus:outline-none focus:ring-primary-500 focus:border-primary-500 focus:z-10 sm:text-sm"
                 placeholder="Password"
+                onKeyDown={handleKeyDown}
               />
             </div>
           </div>

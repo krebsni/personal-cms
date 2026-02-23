@@ -34,6 +34,16 @@ describe("Files API", () => {
         )
       `),
       env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS file_owners (
+          file_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          PRIMARY KEY (file_id, user_id),
+          FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
+          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        )
+      `),
+      env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS permissions (
           id TEXT PRIMARY KEY,
           file_id TEXT NOT NULL,

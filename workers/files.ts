@@ -42,9 +42,17 @@ async function checkFilePermission(
     return false;
   }
 
-  // Owner has all permissions
-  if (userId && file.owner_id === userId) {
-    return true;
+  // Check if user owns the file (multi-owner support)
+  if (userId) {
+    const isOwner = await env.DB.prepare(
+      "SELECT 1 FROM file_owners WHERE file_id = ? AND user_id = ?"
+    )
+      .bind(fileId, userId)
+      .first();
+
+    if (isOwner) {
+      return true;
+    }
   }
 
   // Check if file is public (user_id is NULL in permissions)
@@ -82,8 +90,9 @@ async function getAccessibleFiles(userId: string | null, env: Env): Promise<File
     // Get files owned by user + files with explicit permission + public files
     const result = await env.DB.prepare(
       `SELECT DISTINCT f.* FROM files f
+       LEFT JOIN file_owners fo ON f.id = fo.file_id
        LEFT JOIN permissions p ON f.id = p.file_id
-       WHERE f.owner_id = ? OR p.user_id = ? OR p.user_id IS NULL
+       WHERE fo.user_id = ? OR p.user_id = ? OR p.user_id IS NULL
        ORDER BY f.created_at DESC`
     )
       .bind(userId, userId)
@@ -203,6 +212,13 @@ app.post("/", async (c) => {
       "INSERT INTO files (id, path, owner_id, content_r2_key, size, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)"
     )
       .bind(fileId, filePath, user.id, r2Key, fileContent.byteLength, now, now)
+      .run();
+
+    // Add owner to file_owners table
+    await c.env.DB.prepare(
+      "INSERT INTO file_owners (file_id, user_id, created_at) VALUES (?, ?, ?)"
+    )
+      .bind(fileId, user.id, now)
       .run();
 
     return c.json({
@@ -346,6 +362,83 @@ app.put("/:filePath{.+}", async (c) => {
 });
 
 // DELETE /api/files/:path - Delete file
+// POST /api/files/:path/share - Share file with another user
+app.post("/:filePath{.+}/share", async (c) => {
+  try {
+    const user = await getUserFromContext(c);
+    if (!user) {
+      return c.json({ success: false, error: "Authentication required" }, 401);
+    }
+
+    const rawPath = c.req.param("filePath");
+    let filePath = decodeURIComponent(rawPath);
+    // Be careful with URL encoding, :filePath{+} captures everything including the /share part if not careful
+    // But since we defined /:filePath{.+}/share, Hono should match the share suffix.
+    // Wait, Hono router might be tricky here.
+    // Actually, usually it's safer to use /share/:filePath or query params if path has slashes.
+    // But let's try this. If filePath includes "/share", we might need to strip it?
+    // No, Hono's specific route definition should take precedence or match correctly.
+    // However, the param will be everything before /share.
+
+    const body = await c.req.json() as { email: string };
+    if (!body.email) {
+      return c.json({ success: false, error: "Email is required" }, 400);
+    }
+
+    // Get file from database
+    const file = await c.env.DB.prepare("SELECT * FROM files WHERE path = ?")
+      .bind(filePath)
+      .first<FileRecord>();
+
+    if (!file) {
+      return c.json({ success: false, error: "File not found" }, 404);
+    }
+
+    // Check if user is an owner (only owners can share)
+    const isOwner = await c.env.DB.prepare(
+      "SELECT 1 FROM file_owners WHERE file_id = ? AND user_id = ?"
+    )
+      .bind(file.id, user.id)
+      .first();
+
+    if (!isOwner) {
+      return c.json({ success: false, error: "Only file owners can share files" }, 403);
+    }
+
+    // Find target user by email
+    const targetUser = await c.env.DB.prepare("SELECT id FROM users WHERE email = ?")
+      .bind(body.email)
+      .first<{ id: string }>();
+
+    if (!targetUser) {
+      return c.json({ success: false, error: "User with this email not found" }, 404);
+    }
+
+    // Check if already an owner
+    const alreadyOwner = await c.env.DB.prepare(
+      "SELECT 1 FROM file_owners WHERE file_id = ? AND user_id = ?"
+    )
+      .bind(file.id, targetUser.id)
+      .first();
+
+    if (alreadyOwner) {
+      return c.json({ success: true, message: "User is already an owner" });
+    }
+
+    // Add as owner
+    const now = Math.floor(Date.now() / 1000);
+    await c.env.DB.prepare(
+      "INSERT INTO file_owners (file_id, user_id, created_at) VALUES (?, ?, ?)"
+    )
+      .bind(file.id, targetUser.id, now)
+      .run();
+
+    return c.json({ success: true, message: "File shared successfully" });
+  } catch (e: any) {
+    return c.json({ success: false, error: e.message }, 500);
+  }
+});
+
 app.delete("/:filePath{.+}", async (c) => {
   try {
     const user = await getUserFromContext(c);

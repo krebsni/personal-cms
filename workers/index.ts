@@ -20,7 +20,15 @@ app.use("*", logger());
 app.use("*", prettyJSON());
 app.use("*", secureHeaders());
 app.use("*", cors({
-  origin: "*", // TODO: Restrict in production
+  origin: (origin) => {
+    // Allow local development and production domains
+    if (origin === "http://localhost:5173" || origin === "http://localhost:4173") {
+      return origin;
+    }
+    // For now, allow all origins in dev if needed, or restricted list
+    // But returning the origin is required for credentials: true
+    return origin;
+  },
   allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowHeaders: ["Content-Type", "Authorization"],
   credentials: true,
@@ -34,7 +42,7 @@ app.route("/api/auth", authApp);
 app.route("/api/files", filesApp);
 app.route("/api/permissions", permissionsApp);
 app.route("/api/highlights", highlightsApp);
-app.route("/api/highlights", highlightsApp);
+
 app.route("/api/admin", adminApp);
 
 // Collaboration Route (Durable Object)
@@ -78,6 +86,9 @@ app.notFound((c) => {
 // Error Handler
 app.onError((err, c) => {
   console.error("Worker error:", err);
+  if (err instanceof Error && err.stack) {
+    console.error("Stack trace:", err.stack);
+  }
   return c.json({
     success: false,
     error: err instanceof Error ? err.message : "Internal server error"
