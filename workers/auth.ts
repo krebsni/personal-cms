@@ -187,23 +187,26 @@ app.post("/register", async (c) => {
 // POST /api/auth/login
 app.post("/login", async (c) => {
   try {
-    const body = await c.req.json() as { email: string; password: string };
+    const body = await c.req.json() as { identifier: string; password?: string; email?: string };
 
-    if (!body.email || !body.password) {
-      return c.json({ success: false, error: "Email and password are required" }, 400);
+    const identifier = body.identifier || body.email;
+    const password = body.password;
+
+    if (!identifier || !password) {
+      return c.json({ success: false, error: "Identifier (email or username) and password are required" }, 400);
     }
 
-    const user = await c.env.DB.prepare("SELECT * FROM users WHERE email = ?")
-      .bind(body.email)
+    const user = await c.env.DB.prepare("SELECT * FROM users WHERE email = ? OR username = ?")
+      .bind(identifier, identifier)
       .first<User>();
 
     if (!user) {
-      return c.json({ success: false, error: "Invalid email or password" }, 401);
+      return c.json({ success: false, error: "Invalid credentials" }, 401);
     }
 
-    const valid = await bcrypt.compare(body.password, user.password_hash);
+    const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
-      return c.json({ success: false, error: "Invalid email or password" }, 401);
+      return c.json({ success: false, error: "Invalid credentials" }, 401);
     }
 
     const token = await generateToken(user, c.env.JWT_SECRET);
