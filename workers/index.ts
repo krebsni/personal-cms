@@ -11,6 +11,7 @@ import { filesApp } from "./files";
 import { permissionsApp } from "./permissions";
 import { highlightsApp } from "./highlights";
 import { adminApp } from "./admin";
+import { repositoriesApp } from "./repositories";
 import { CollaborationRoom } from "./collaboration";
 
 const app = new Hono<{ Bindings: Env }>();
@@ -42,6 +43,7 @@ app.route("/api/auth", authApp);
 app.route("/api/files", filesApp);
 app.route("/api/permissions", permissionsApp);
 app.route("/api/highlights", highlightsApp);
+app.route("/api/repositories", repositoriesApp);
 
 app.route("/api/admin", adminApp);
 

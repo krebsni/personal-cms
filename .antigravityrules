@@ -1,0 +1,28 @@
+# Frontend Agent Orchestration Rules
+
+## 1. Project Context & Tech Stack
+- **Framework:** React / Next.js 15 (App Router)
+- **Language:** TypeScript (Strict mode enabled)
+- **Styling:** Tailwind CSS + shadcn/ui
+- **State Management:** Zustand (Global) & React Context (Local)
+- **API Fetching:** TanStack Query (React Query)
+
+## 2. The "No Spaghetti" Prime Directives
+- **Zero `any` Types:** Never use `any`. Always define explicit TypeScript interfaces or types for all props, state, and API responses.
+- **Component Size Limit:** If a component exceeds 150 lines of code, pause and propose a refactoring plan to break it down into smaller, modular sub-components.
+- **Fail Loudly:** If a required dependency is missing or an API route returns an unexpected format, do not "guess" or write a generic fallback. Throw an explicit error and ask the user for instructions.
+
+## 3. The Required Workflow (Strict Enforcement)
+You must execute frontend tasks in the following sequential order. Do not skip steps.
+
+1.  **Plan & Artifact Generation:** Read the requirements and generate a markdown artifact detailing the component structure, state requirements, and file paths. **Wait for user approval.**
+2.  **Static UI First:** Scaffold the components using Tailwind CSS and hardcoded mock data. Do not add interactivity, fetching, or global state yet. Open the built-in browser, test the UI, and generate a screenshot artifact. **Wait for user approval.**
+3.  **State Integration:** Replace mock data with local state or Zustand.
+4.  **API Wiring:** Wire the components to the actual backend endpoints. Implement loading skeletons and error boundaries.
+
+## 4. Debugging Protocol
+If you encounter an error (e.g., React hydration mismatch, infinite re-render loop, or console error):
+1. Stop writing code immediately.
+2. Read the error log and use the built-in browser to inspect the UI state.
+3. Output an analysis of the root cause.
+4. Propose **two distinct solutions** to the user and ask which one to implement.
