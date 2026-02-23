@@ -22,36 +22,46 @@ describe("Files API", () => {
         )
       `),
       env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS repositories (
+          id TEXT PRIMARY KEY,
+          name TEXT NOT NULL,
+          owner_id TEXT NOT NULL,
+          created_at INTEGER NOT NULL
+        )
+      `),
+      env.DB.prepare(`
+        CREATE TABLE IF NOT EXISTS folders (
+          id TEXT PRIMARY KEY,
+          path TEXT UNIQUE NOT NULL,
+          owner_id TEXT NOT NULL,
+          parent_id TEXT,
+          repository_id TEXT,
+          is_public INTEGER NOT NULL DEFAULT 0,
+          created_at INTEGER NOT NULL
+        )
+      `),
+      env.DB.prepare(`
         CREATE TABLE IF NOT EXISTS files (
           id TEXT PRIMARY KEY,
           path TEXT UNIQUE NOT NULL,
           owner_id TEXT NOT NULL,
+          parent_id TEXT,
+          repository_id TEXT,
+          is_public INTEGER NOT NULL DEFAULT 0,
           content_r2_key TEXT NOT NULL,
           size INTEGER NOT NULL,
           created_at INTEGER NOT NULL,
-          updated_at INTEGER NOT NULL,
-          FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE
+          updated_at INTEGER NOT NULL
         )
       `),
       env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS file_owners (
-          file_id TEXT NOT NULL,
-          user_id TEXT NOT NULL,
-          created_at INTEGER NOT NULL,
-          PRIMARY KEY (file_id, user_id),
-          FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-        )
-      `),
-      env.DB.prepare(`
-        CREATE TABLE IF NOT EXISTS permissions (
+        CREATE TABLE IF NOT EXISTS assignments (
           id TEXT PRIMARY KEY,
-          file_id TEXT NOT NULL,
-          user_id TEXT,
-          permission TEXT NOT NULL CHECK(permission IN ('read', 'write')),
+          resource_id TEXT NOT NULL,
+          user_id TEXT NOT NULL,
+          role TEXT NOT NULL CHECK(role IN ('viewer', 'editor')),
           created_at INTEGER NOT NULL,
-          FOREIGN KEY (file_id) REFERENCES files(id) ON DELETE CASCADE,
-          FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+          UNIQUE(user_id, resource_id)
         )
       `),
       env.DB.prepare(`

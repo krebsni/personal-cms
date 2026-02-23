@@ -163,6 +163,7 @@ app.put("/:id", async (c) => {
       startOffset?: number;
       endOffset?: number;
       textSnapshot?: string;
+      lastUpdatedAt?: number;
     };
 
     // Get existing highlight
@@ -177,6 +178,15 @@ app.put("/:id", async (c) => {
     // Check if user owns this highlight
     if (highlight.user_id !== user.id) {
       return c.json({ success: false, error: "Only highlight owner can update it" }, 403);
+    }
+
+    // Optimistic locking check
+    if (body.lastUpdatedAt && highlight.updated_at > body.lastUpdatedAt) {
+        return c.json({
+            success: false,
+            error: "Highlight has been modified by someone else or in another session",
+            code: "CONFLICT_OPTIMISTIC_LOCK"
+        }, 409);
     }
 
     // Validate offset range if provided
