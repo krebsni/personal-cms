@@ -4,6 +4,7 @@ import { Layout } from './components/Layout';
 import { LoginPage } from './pages/Auth/LoginPage';
 import { RegisterPage } from './pages/Auth/RegisterPage';
 import { AdminDashboard } from './pages/Admin/AdminDashboard';
+import { FileView } from './pages/Repository/FileView';
 import { useAuthSession } from './hooks/useAuthApi';
 import { useAuthStore } from './store/authStore';
 
@@ -33,6 +34,7 @@ function App() {
         {/* App Routes (With Sidebar and Topbar) */}
         <Route element={<AuthWrapper><Layout><Outlet /></Layout></AuthWrapper>}>
           <Route path="/" element={<div className="p-8"><h1 className="text-2xl font-semibold mb-4 text-foreground">Welcome to Personal CMS</h1><p className="text-muted-foreground">Select a repository or file from the sidebar to begin.</p></div>} />
+          <Route path="/repo/:repoId/file/:fileId" element={<FileView />} />
           <Route path="/admin" element={<AdminDashboard />} />
         </Route>
       </Routes>

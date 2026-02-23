@@ -23,7 +23,7 @@ export const LoginPage: React.FC = () => {
     // Wait, checking auth.ts: POST /login checks `email`.
     // We should send it as email for now.
     try {
-      await loginMutation.mutateAsync({ identifier, password });
+      await loginMutation.mutateAsync({ identifier, email: identifier, password });
       navigate('/');
     } catch (err: any) {
       setErrorMsg(err.message || 'Login failed');
