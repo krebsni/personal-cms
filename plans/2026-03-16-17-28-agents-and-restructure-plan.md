@@ -3,9 +3,9 @@
 Timestamp: 2026-03-16 17:28 (Europe/Berlin)
 
 ## Phase 1: Agent Instructions
-- [ ] Add `AGENTS.md` with persistent workflow instructions.
-- [ ] Commit phase 1.
+- [x] Add `AGENTS.md` with persistent workflow instructions.
+- [x] Commit phase 1.
 
 ## Phase 2: Restructure Plan File
-- [ ] Create the restructure plan file in `plans/` with phases + checkboxes.
-- [ ] Pause for user review.
+- [x] Create the restructure plan file in `plans/` with phases + checkboxes.
+- [x] Pause for user review.
