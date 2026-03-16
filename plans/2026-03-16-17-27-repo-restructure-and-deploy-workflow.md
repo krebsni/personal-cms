@@ -15,7 +15,7 @@ Timestamp: 2026-03-16 17:27 (Europe/Berlin)
 - [x] Move or link existing `tests/` content accordingly (preserve history).
 - [x] Update test configs and scripts (`vitest.config`, `tests/tsconfig.json`, root scripts) to run per app.
 - [x] Add `npm run check` (lint + typecheck + tests) at root.
-- [ ] Commit phase 2.
+- [x] Commit phase 2.
 
 ## Phase 3: GitHub Workflow + Cloudflare Test Deploy Guide
 - [ ] Research current Cloudflare Pages/Workers/D1 GitHub integration requirements (official docs).
