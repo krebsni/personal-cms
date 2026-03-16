@@ -18,7 +18,7 @@ Timestamp: 2026-03-16 17:27 (Europe/Berlin)
 - [x] Commit phase 2.
 
 ## Phase 3: GitHub Workflow + Cloudflare Test Deploy Guide
-- [ ] Research current Cloudflare Pages/Workers/D1 GitHub integration requirements (official docs).
-- [ ] Draft a step-by-step guide for a test/staging environment on GitHub.
+- [x] Research current Cloudflare Pages/Workers/D1 GitHub integration requirements (official docs).
+- [x] Draft a step-by-step guide for a test/staging environment on GitHub.
 - [ ] (Optional) Add a starter GitHub Actions workflow for CI (build + test) if you want it in-repo.
 - [ ] Commit phase 3 (only if in-repo files are added).
