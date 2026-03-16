@@ -1,5 +1,7 @@
 # Personal CMS - Implementation Plan (Reconstructed)
 
+> Superseded by `IMPLEMENTATION_PLAN_MASTER.md`. Keep this file for historical reference only.
+
 > **Note**: This plan has been reconstructed from git history and project structure.
 > Original plan from previous session was not persisted.
 

@@ -1,5 +1,7 @@
 # Personal CMS - New Implementation Plan
 
+> Superseded by `IMPLEMENTATION_PLAN_MASTER.md`. Keep this file for historical reference only.
+
 ## 1. Goal and Vision
 The goal is to rebuild the Personal CMS into a premium, Obsidian-like web application. The application will center around "Repositories" (like vaults) containing folder structures of markdown files. It will support granular collaborative features, including unified read/highlight modes, raw code editing for owners, link previews, and access requests. The stack will use Cloudflare Workers (D1, R2, Durable Objects) for the backend and a modern React frontend deployed on Cloudflare Pages.
 
