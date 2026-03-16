@@ -8,7 +8,7 @@ Timestamp: 2026-03-16 17:27 (Europe/Berlin)
 - [x] Update root `package.json` workspaces and scripts to target `apps/web` and `apps/api`.
 - [x] Update README project structure + dev commands.
 - [x] Add or update `.env.example` for each app if needed.
-- [ ] Commit phase 1.
+- [x] Commit phase 1.
 
 ## Phase 2: Test + Dev Workflow (Automation-Ready)
 - [ ] Decide test placement: `apps/web/tests`, `apps/api/tests`, and optional root `tests/e2e`.
