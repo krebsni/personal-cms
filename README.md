@@ -194,6 +194,7 @@ personal-cms/
 1. Cloudflare account (sign up at [cloudflare.com](https://cloudflare.com))
 2. Node.js 20+ installed
 3. Wrangler CLI (installed via npm)
+4. For staging: create separate D1 + R2 resources and set IDs in `wrangler.toml`
 
 ### Step 1: Login to Cloudflare
 
