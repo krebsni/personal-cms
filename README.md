@@ -302,6 +302,8 @@ Pages preview deploys use `wrangler pages deploy --branch <branch>` and will pub
 ### Important Note (Direct Upload)
 These workflows use Wrangler’s direct upload flow for Pages; Direct Upload projects cannot be switched to Git integration later.
 
+### Troubleshooting
+- **Pages warning about `pages_build_output_dir`**: ensure `wrangler.toml` includes `pages_build_output_dir = "apps/web/dist"`.\n- **Auth error `(/memberships) Authentication failed (code 9106)`**:\n  - Verify `CLOUDFLARE_API_TOKEN` is a valid API token with Pages edit permissions (Account → Cloudflare Pages → Edit).\n  - Ensure `CLOUDFLARE_ACCOUNT_ID` matches the account that owns the Pages/Workers project.\n  - If deploying Workers, the token should also allow Workers edits.\n+
 ### Verification Checklist
 1. Open a PR and confirm the preview Pages deployment URL is created.
 2. Merge or push to `staging` and confirm Workers deploy with `--env staging`.
