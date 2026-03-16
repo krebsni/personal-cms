@@ -283,6 +283,30 @@ npx wrangler pages domain add personal-cms yourdomain.com
 
 Every push to `main` will auto-deploy!
 
+## GitHub Actions Test Deploys (PR + staging)
+
+This repo includes GitHub Actions workflows that deploy:
+- **PRs**: Pages preview + Workers `staging`
+- **`staging` branch**: Pages deployment to the `staging` branch alias + Workers `staging`
+
+### Required Secrets
+Add repository secrets:
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+These are required by `cloudflare/wrangler-action@v3` in the workflows.
+
+### Pages Preview URLs
+Pages preview deploys use `wrangler pages deploy --branch <branch>` and will publish to the branch alias URL.
+
+### Important Note (Direct Upload)
+These workflows use Wrangler’s direct upload flow for Pages; Direct Upload projects cannot be switched to Git integration later.
+
+### Verification Checklist
+1. Open a PR and confirm the preview Pages deployment URL is created.
+2. Merge or push to `staging` and confirm Workers deploy with `--env staging`.
+3. Validate the staging Pages URL loads the new frontend build.
+
 ## Alternative: Deploy to AWS S3 (Fallback)
 
 If you prefer AWS over Cloudflare:
