@@ -1,0 +1,4 @@
+interface:
+  display_name: "Repo Architecture Governor"
+  short_description: "Structure, security, tooling consistency"
+  default_prompt: "Use $repo-architecture-governor to restructure and enforce repo guardrails."

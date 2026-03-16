@@ -1,0 +1,4 @@
+interface:
+  display_name: "Frontend Visual Verify"
+  short_description: "Mock-first UI verification with screenshots"
+  default_prompt: "Use $frontend-visual-verify to mock UI states and capture screenshots before wiring real data."
