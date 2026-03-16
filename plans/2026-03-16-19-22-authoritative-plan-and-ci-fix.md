@@ -11,4 +11,4 @@ Timestamp: 2026-03-16 19:22 (Europe/Berlin)
 - [x] Investigate the Pages warning and API auth error.
 - [x] Update `wrangler.toml` with `pages_build_output_dir` for Pages.
 - [x] Update workflow/secrets guidance for API token auth.
-- [ ] Commit phase 2.
+- [x] Commit phase 2.
