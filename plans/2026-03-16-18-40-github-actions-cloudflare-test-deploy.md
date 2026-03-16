@@ -17,4 +17,4 @@ Timestamp: 2026-03-16 18:40 (Europe/Berlin)
 ## Phase 3: Guide + Verification
 - [x] Add a concise README section on how the workflows work and required secrets.
 - [x] Provide a short verification checklist (manual).
-- [ ] Commit phase 3.
+- [x] Commit phase 3.
