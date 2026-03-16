@@ -11,10 +11,10 @@ Timestamp: 2026-03-16 17:27 (Europe/Berlin)
 - [x] Commit phase 1.
 
 ## Phase 2: Test + Dev Workflow (Automation-Ready)
-- [ ] Decide test placement: `apps/web/tests`, `apps/api/tests`, and optional root `tests/e2e`.
-- [ ] Move or link existing `tests/` content accordingly (preserve history).
-- [ ] Update test configs and scripts (`vitest.config`, `tests/tsconfig.json`, root scripts) to run per app.
-- [ ] Add `npm run check` (lint + typecheck + tests) at root.
+- [x] Decide test placement: keep root `tests/` for integration/e2e; add app tests later as needed.
+- [x] Move or link existing `tests/` content accordingly (preserve history).
+- [x] Update test configs and scripts (`vitest.config`, `tests/tsconfig.json`, root scripts) to run per app.
+- [x] Add `npm run check` (lint + typecheck + tests) at root.
 - [ ] Commit phase 2.
 
 ## Phase 3: GitHub Workflow + Cloudflare Test Deploy Guide

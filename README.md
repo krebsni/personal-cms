@@ -341,6 +341,16 @@ npm run test
 npm run lint
 ```
 
+### Typechecking
+```bash
+npm run typecheck
+```
+
+### Full Check (Lint + Typecheck + Tests)
+```bash
+npm run check
+```
+
 ### Formatting
 ```bash
 npm run format
