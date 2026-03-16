@@ -1,5 +1,5 @@
 name = "personal-cms-workers"
-main = "workers/index.ts"
+main = "apps/api/index.ts"
 compatibility_date = "2024-01-01"
 
 # Local development variables
@@ -15,6 +15,10 @@ vars = { ENVIRONMENT = "development", JWT_SECRET = "dev-secret-key-change-in-pro
 [env.production]
 vars = { ENVIRONMENT = "production" }
 
+# Staging configuration
+[env.staging]
+vars = { ENVIRONMENT = "staging" }
+
 # D1 Database bindings - Development/Local
 [[d1_databases]]
 binding = "DB"
@@ -27,6 +31,12 @@ binding = "DB"
 database_name = "personal-cms-prod"
 database_id = "PROD_DB_ID_GOES_HERE" # Update with actual ID
 
+# D1 Database bindings - Staging
+[env.staging.d1_databases]
+binding = "DB"
+database_name = "personal-cms-staging"
+database_id = "STAGING_DB_ID_GOES_HERE" # Update with actual ID
+
 # R2 Storage bindings - Development/Local
 [[r2_buckets]]
 binding = "R2_BUCKET"
@@ -36,6 +46,11 @@ bucket_name = "personal-cms-files-local"
 [env.production.r2_buckets]
 binding = "R2_BUCKET"
 bucket_name = "personal-cms-files-prod"
+
+# R2 Storage bindings - Staging
+[env.staging.r2_buckets]
+binding = "R2_BUCKET"
+bucket_name = "personal-cms-files-staging"
 
 # Durable Objects for real-time collaboration
 [[durable_objects.bindings]]

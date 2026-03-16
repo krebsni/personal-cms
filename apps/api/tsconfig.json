@@ -1,5 +1,5 @@
 {
-  "extends": "../tsconfig.json",
+  "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../dist-worker",
     "target": "esnext",
@@ -9,5 +9,5 @@
     "types": ["@cloudflare/workers-types"]
   },
   "include": ["."],
-  "exclude": ["../node_modules", "../dist", "../tests"]
+  "exclude": ["../../node_modules", "../../dist", "../../tests"]
 }

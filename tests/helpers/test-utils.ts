@@ -1,5 +1,5 @@
 // Test utilities and helpers
-import type { Env } from "../../workers/index";
+import type { Env } from "../../apps/api/index";
 
 // Helper to create a test request
 export function createTestRequest(

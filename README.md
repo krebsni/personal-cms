@@ -70,16 +70,24 @@ cd personal-cms
 npm install
 ```
 
-### 2. Create Environment File
+Note: The frontend lives in `apps/web/` and is wired via npm workspaces. Root scripts proxy into `apps/web/`.
+
+### 2. Create Environment Files
 
 ```bash
-cp .env.example .env
+cp apps/web/.env.example apps/web/.env
+cp apps/api/.env.example apps/api/.env
 ```
 
-Edit `.env` with your configuration:
+Edit the app env files with your configuration:
 ```env
+# apps/web/.env
 VITE_API_URL=http://localhost:8787
 VITE_WS_URL=ws://localhost:8787
+```
+
+```env
+# apps/api/.env
 JWT_SECRET=your-development-secret-key-change-in-production
 ENVIRONMENT=development
 ```
@@ -151,32 +159,32 @@ Visit: http://localhost:5173 (frontend proxies API to :8787)
 
 ```
 personal-cms/
-├── src/                      # Frontend React app
-│   ├── components/          # React components
-│   │   ├── auth/           # Login, Register
-│   │   ├── layout/         # Header, Sidebar
-│   │   ├── markdown/       # MDRenderer, LinkPreview
-│   │   ├── editor/         # HighlightOverlay, ColorPicker
-│   │   ├── files/          # FileBrowser, FileTree
-│   │   └── admin/          # UserManagement
-│   ├── hooks/              # Custom React hooks
-│   ├── stores/             # Zustand stores
-│   ├── services/           # API client, WebSocket
-│   ├── utils/              # Helper functions
-│   └── types/              # TypeScript types
-├── workers/                 # Cloudflare Workers (backend)
-│   ├── index.ts            # Main worker router
-│   ├── auth.ts             # Authentication API
-│   ├── files.ts            # File CRUD operations
-│   ├── permissions.ts      # Permission management
-│   ├── highlights.ts       # Highlight annotations
-│   └── collaboration.ts    # Durable Object (WebSocket)
+├── apps/                     # App workspace root
+│   ├── web/                  # Frontend React app
+│   │   ├── src/
+│   │   │   ├── components/   # React components
+│   │   │   │   ├── auth/     # Login, Register
+│   │   │   │   ├── layout/   # Header, Sidebar
+│   │   │   │   ├── markdown/ # MDRenderer, LinkPreview
+│   │   │   │   ├── editor/   # HighlightOverlay, ColorPicker
+│   │   │   │   ├── files/    # FileBrowser, FileTree
+│   │   │   │   └── admin/    # UserManagement
+│   │   │   ├── hooks/        # Custom React hooks
+│   │   │   ├── store/        # Zustand stores
+│   │   │   ├── lib/          # Utilities
+│   │   │   ├── pages/        # Route pages
+│   │   │   └── types.ts      # TypeScript types
+│   ├── api/                  # Cloudflare Workers (backend)
+│   │   ├── index.ts          # Main worker router
+│   │   ├── auth.ts           # Authentication API
+│   │   ├── files.ts          # File CRUD operations
+│   │   ├── permissions.ts    # Permission management
+│   │   ├── highlights.ts     # Highlight annotations
+│   │   └── collaboration.ts  # Durable Object (WebSocket)
 ├── migrations/              # D1 database migrations
 │   └── 0001_initial.sql    # Initial schema
 ├── public/                  # Static assets
 ├── wrangler.toml           # Cloudflare configuration
-├── vite.config.ts          # Vite configuration
-├── tailwind.config.js      # TailwindCSS configuration
 └── package.json            # Dependencies and scripts
 ```
 
@@ -186,6 +194,7 @@ personal-cms/
 1. Cloudflare account (sign up at [cloudflare.com](https://cloudflare.com))
 2. Node.js 20+ installed
 3. Wrangler CLI (installed via npm)
+4. For staging: create separate D1 + R2 resources and set IDs in `wrangler.toml`
 
 ### Step 1: Login to Cloudflare
 
@@ -246,7 +255,7 @@ npx wrangler deploy
 npm run build
 
 # Deploy to Cloudflare Pages
-npx wrangler pages deploy dist --project-name=personal-cms
+npx wrangler pages deploy apps/web/dist --project-name=personal-cms
 ```
 
 ### Step 8: Configure Custom Domain (Optional)
@@ -273,6 +282,30 @@ npx wrangler pages domain add personal-cms yourdomain.com
 7. Add environment variables from your `.env`
 
 Every push to `main` will auto-deploy!
+
+## GitHub Actions Test Deploys (PR + staging)
+
+This repo includes GitHub Actions workflows that deploy:
+- **PRs**: Pages preview + Workers `staging`
+- **`staging` branch**: Pages deployment to the `staging` branch alias + Workers `staging`
+
+### Required Secrets
+Add repository secrets:
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+These are required by `cloudflare/wrangler-action@v3` in the workflows.
+
+### Pages Preview URLs
+Pages preview deploys use `wrangler pages deploy --branch <branch>` and will publish to the branch alias URL.
+
+### Important Note (Direct Upload)
+These workflows use Wrangler’s direct upload flow for Pages; Direct Upload projects cannot be switched to Git integration later.
+
+### Verification Checklist
+1. Open a PR and confirm the preview Pages deployment URL is created.
+2. Merge or push to `staging` and confirm Workers deploy with `--env staging`.
+3. Validate the staging Pages URL loads the new frontend build.
 
 ## Alternative: Deploy to AWS S3 (Fallback)
 
@@ -309,7 +342,7 @@ cdk deploy
 4. Build and deploy frontend:
 ```bash
 npm run build
-aws s3 sync dist/ s3://your-bucket-name
+aws s3 sync apps/web/dist/ s3://your-bucket-name
 ```
 
 5. Setup CloudFront distribution for HTTPS and caching
@@ -331,6 +364,16 @@ npm run test
 ### Linting
 ```bash
 npm run lint
+```
+
+### Typechecking
+```bash
+npm run typecheck
+```
+
+### Full Check (Lint + Typecheck + Tests)
+```bash
+npm run check
 ```
 
 ### Formatting
@@ -452,7 +495,7 @@ npx wrangler d1 migrations apply personal-cms-local --local
 
 ### CORS Errors
 
-Ensure your Workers are configured to allow CORS in `workers/index.ts`:
+Ensure your Workers are configured to allow CORS in `apps/api/index.ts`:
 ```typescript
 headers: {
   'Access-Control-Allow-Origin': '*',
