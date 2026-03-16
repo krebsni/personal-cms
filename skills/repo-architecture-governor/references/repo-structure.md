@@ -1,8 +1,8 @@
 # Repo Structure Notes (Personal CMS)
 
 Current layout highlights:
-- Frontend: `frontend/`
-- Backend: `workers/`
+- Frontend: `apps/web/`
+- Backend: `apps/api/`
 - D1 migrations: `migrations/`
 - Tests: `tests/`
 - Wrangler config: `wrangler.toml`

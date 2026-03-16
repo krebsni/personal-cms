@@ -1,6 +1,6 @@
 import { env, createExecutionContext, waitOnExecutionContext, self } from "cloudflare:test";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import worker, { CollaborationRoom } from "../../workers/index";
+import worker, { CollaborationRoom } from "../../apps/api/index";
 
 // Define the Durable Object binding
 const IncomingRequest = Request<unknown, IncomingRequestCfProperties>;

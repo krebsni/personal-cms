@@ -10,15 +10,8 @@ services:
     ports:
       - "5173:5173" # Vite dev server
     volumes:
-      - ./src:/app/src
-      - ./public:/app/public
-      - ./index.html:/app/index.html
-      - ./vite.config.ts:/app/vite.config.ts
-      - ./tailwind.config.js:/app/tailwind.config.js
-      - ./postcss.config.js:/app/postcss.config.js
-      - ./tsconfig.json:/app/tsconfig.json
-      - ./tsconfig.app.json:/app/tsconfig.app.json
-      - /app/node_modules # Prevent overwriting node_modules
+      - ./apps/web:/app/apps/web
+      - /app/apps/web/node_modules # Prevent overwriting node_modules
     environment:
       - VITE_API_URL=http://localhost:8787
       - NODE_ENV=development
@@ -34,7 +27,7 @@ services:
     ports:
       - "8787:8787" # Wrangler dev server
     volumes:
-      - ./workers:/app/workers
+      - ./apps/api:/app/apps/api
       - ./migrations:/app/migrations
       - ./wrangler.toml:/app/wrangler.toml
       - ./.wrangler:/app/.wrangler

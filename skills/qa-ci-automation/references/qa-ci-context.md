@@ -8,5 +8,5 @@ Tests directory:
 - `tests/` with `integration/` and helpers
 
 Frontend tooling:
-- `frontend/` uses Vite + React 19 + Tailwind
-- Frontend tests may live under `frontend/src/` or `frontend/tests/`
+- `apps/web/` uses Vite + React 19 + Tailwind
+- Frontend tests may live under `apps/web/src/` or `apps/web/tests/`

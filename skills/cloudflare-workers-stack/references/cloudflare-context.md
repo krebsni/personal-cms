@@ -1,9 +1,9 @@
 # Cloudflare Stack Context (Personal CMS)
 
 Key paths:
-- Worker entry: `workers/index.ts`
-- Worker modules: `workers/*.ts`
-- Env bindings: `workers/types.ts`
+- Worker entry: `apps/api/index.ts`
+- Worker modules: `apps/api/*.ts`
+- Env bindings: `apps/api/types.ts`
 - Wrangler config: `wrangler.toml`
 - Migrations: `migrations/`
 
@@ -12,5 +12,5 @@ Local dev commands:
 - `npx wrangler d1 migrations apply <db> --local`
 
 Notes:
-- Durable Object: `CollaborationRoom` in `workers/collaboration.ts`
+- Durable Object: `CollaborationRoom` in `apps/api/collaboration.ts`
 - D1 schema lives in `migrations/0001_initial.sql`

@@ -29,14 +29,14 @@
 **Status**: STARTED - Authentication backend completed!
 
 ### 3.1: Core Backend Infrastructure ✅ COMPLETED
-- [x] **workers/index.ts** - Main router with CORS handling
+- [x] **apps/api/index.ts** - Main router with CORS handling
   - Request routing by method + path
   - CORS middleware
   - Error handling
   - D1 and R2 bindings setup
 
 ### 3.2: Authentication API (Priority 1) ✅ COMPLETED
-- [x] **workers/auth.ts** - Authentication endpoints
+- [x] **apps/api/auth.ts** - Authentication endpoints
   - POST /api/auth/register - User registration with bcryptjs
   - POST /api/auth/login - Login with JWT generation
   - POST /api/auth/logout - Session invalidation
@@ -50,7 +50,7 @@
 - [x] End-to-end testing ✅
 
 ### 3.3: File Management API ✅ COMPLETED
-- [x] **workers/files.ts** - File CRUD operations
+- [x] **apps/api/files.ts** - File CRUD operations
   - GET /api/files - List files (with permission filtering)
   - GET /api/files/:path - Get file metadata + content from R2
   - POST /api/files - Upload file to R2 + save metadata to D1 (JSON & multipart)
@@ -62,7 +62,7 @@
 - [x] End-to-end testing ✅
 
 ### 3.4: Permissions API ✅ COMPLETED
-- [x] **workers/permissions.ts** - Permission management
+- [x] **apps/api/permissions.ts** - Permission management
   - GET /api/permissions/file/:id - Get file permissions
   - POST /api/permissions/file/:id - Grant file access (user-specific & public)
   - DELETE /api/permissions/file/:id/:permissionId - Revoke access
@@ -74,19 +74,19 @@
 - [x] Owner verification for all permission operations
 
 ### 3.5: Highlights API ✅ COMPLETED
-- [x] **workers/highlights.ts** - Highlight annotations
+- [x] **apps/api/highlights.ts** - Highlight annotations
   - GET /api/highlights/file/:id - Get user's highlights for file
   - POST /api/highlights - Create highlight
   - PUT /api/highlights/:id - Update highlight
   - DELETE /api/highlights/:id - Delete highlight
-- [x] Integrated into main router (workers/index.ts)
+- [x] Integrated into main router (apps/api/index.ts)
 - [x] Comprehensive integration tests (17/17 passing)
 - [x] Offset-based text highlighting with drift detection
 - [x] Permission checking (requires read access to file)
 - [x] Owner-only updates and deletes
 
 ### 3.6: Admin API ✅ COMPLETED
-- [x] **workers/admin.ts** - Admin-only endpoints
+- [x] **apps/api/admin.ts** - Admin-only endpoints
   - GET /api/admin/users - List all users
   - POST /api/admin/users - Create user
   - PUT /api/admin/users/:id - Update user (role, username, email, password)
@@ -95,7 +95,7 @@
   - POST /api/admin/colors - Add color
   - PUT /api/admin/colors/:id - Update color (name, hex, order, default)
   - DELETE /api/admin/colors/:id - Remove color
-- [x] Integrated into main router (workers/index.ts)
+- [x] Integrated into main router (apps/api/index.ts)
 - [x] Comprehensive integration tests (24/24 passing - 100%)
 - [x] Role-based access control (admin-only)
 - [x] Self-deletion prevention for admins
@@ -148,8 +148,8 @@
 ## Phase 5: Real-time Collaboration ⏳ IN PROGRESS
 **Status**: IN PROGRESS
 
-- [x] **workers/collaboration.ts** - Durable Objects implementation
-- [ ] **workers/index.ts** - Routing to Durable Object (MISSING)
+- [x] **apps/api/collaboration.ts** - Durable Objects implementation
+- [ ] **apps/api/index.ts** - Routing to Durable Object (MISSING)
 - [x] WebSocket connection handling
 - [x] Presence tracking (who's viewing)
 - [x] Live cursor positions broadcasting

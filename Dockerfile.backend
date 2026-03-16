@@ -10,7 +10,7 @@ COPY package*.json ./
 RUN npm ci
 
 # Copy backend code
-COPY workers ./workers
+COPY apps/api ./apps/api
 COPY wrangler.toml ./
 COPY migrations ./migrations
 

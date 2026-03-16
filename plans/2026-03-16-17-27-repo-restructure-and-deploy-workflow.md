@@ -3,11 +3,11 @@
 Timestamp: 2026-03-16 17:27 (Europe/Berlin)
 
 ## Phase 1: Repo Restructure (Apps Layout)
-- [ ] Create `apps/` layout: move `frontend/` -> `apps/web`, `workers/` -> `apps/api` (keep current deletes).
-- [ ] Update configs to new paths: `wrangler.toml`, `docker-compose.yml`, `Dockerfile.frontend`, `Dockerfile.backend`, `Makefile` (if needed).
-- [ ] Update root `package.json` workspaces and scripts to target `apps/web` and `apps/api`.
-- [ ] Update README project structure + dev commands.
-- [ ] Add or update `.env.example` for each app if needed.
+- [x] Create `apps/` layout: move `frontend/` -> `apps/web`, `workers/` -> `apps/api` (keep current deletes).
+- [x] Update configs to new paths: `wrangler.toml`, `docker-compose.yml`, `Dockerfile.frontend`, `Dockerfile.backend`, `Makefile` (if needed).
+- [x] Update root `package.json` workspaces and scripts to target `apps/web` and `apps/api`.
+- [x] Update README project structure + dev commands.
+- [x] Add or update `.env.example` for each app if needed.
 - [ ] Commit phase 1.
 
 ## Phase 2: Test + Dev Workflow (Automation-Ready)

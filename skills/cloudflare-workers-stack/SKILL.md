@@ -11,7 +11,7 @@ Apply consistent patterns for Cloudflare Workers, D1, R2, and Durable Objects wi
 ## Workflow
 1. Identify the Worker surface area being changed (route, auth, DB, storage, realtime).
 2. Check `wrangler.toml` and environment variables for bindings and compatibility date.
-3. Update Worker code under `workers/` with Hono conventions and consistent JSON responses.
+3. Update Worker code under `apps/api/` with Hono conventions and consistent JSON responses.
 4. For D1 changes, add a migration under `migrations/` and update queries carefully.
 5. For R2 changes, ensure key naming and content type handling are consistent.
 6. Run or update tests covering the API behavior.

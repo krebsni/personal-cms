@@ -11,7 +11,7 @@ Deliver UI changes by rendering with mock data first, capturing screenshots, and
 ## Workflow
 1. Identify the target routes/components and the states to showcase (empty/loading/error/typical).
 2. Inject mock data before state wiring.
-   - Prefer a mock layer in `frontend/src/lib/api.ts` or in hooks under `frontend/src/hooks/`.
+   - Prefer a mock layer in `apps/web/src/lib/api.ts` or in hooks under `apps/web/src/hooks/`.
    - If no mock infra exists, add a small, temporary mock adapter and gate it behind a local flag.
 3. Render the UI with mocks and capture screenshots (desktop + mobile).
    - Use Playwright or Puppeteer.

@@ -70,16 +70,24 @@ cd personal-cms
 npm install
 ```
 
-### 2. Create Environment File
+Note: The frontend lives in `apps/web/` and is wired via npm workspaces. Root scripts proxy into `apps/web/`.
+
+### 2. Create Environment Files
 
 ```bash
-cp .env.example .env
+cp apps/web/.env.example apps/web/.env
+cp apps/api/.env.example apps/api/.env
 ```
 
-Edit `.env` with your configuration:
+Edit the app env files with your configuration:
 ```env
+# apps/web/.env
 VITE_API_URL=http://localhost:8787
 VITE_WS_URL=ws://localhost:8787
+```
+
+```env
+# apps/api/.env
 JWT_SECRET=your-development-secret-key-change-in-production
 ENVIRONMENT=development
 ```
@@ -151,32 +159,32 @@ Visit: http://localhost:5173 (frontend proxies API to :8787)
 
 ```
 personal-cms/
-├── src/                      # Frontend React app
-│   ├── components/          # React components
-│   │   ├── auth/           # Login, Register
-│   │   ├── layout/         # Header, Sidebar
-│   │   ├── markdown/       # MDRenderer, LinkPreview
-│   │   ├── editor/         # HighlightOverlay, ColorPicker
-│   │   ├── files/          # FileBrowser, FileTree
-│   │   └── admin/          # UserManagement
-│   ├── hooks/              # Custom React hooks
-│   ├── stores/             # Zustand stores
-│   ├── services/           # API client, WebSocket
-│   ├── utils/              # Helper functions
-│   └── types/              # TypeScript types
-├── workers/                 # Cloudflare Workers (backend)
-│   ├── index.ts            # Main worker router
-│   ├── auth.ts             # Authentication API
-│   ├── files.ts            # File CRUD operations
-│   ├── permissions.ts      # Permission management
-│   ├── highlights.ts       # Highlight annotations
-│   └── collaboration.ts    # Durable Object (WebSocket)
+├── apps/                     # App workspace root
+│   ├── web/                  # Frontend React app
+│   │   ├── src/
+│   │   │   ├── components/   # React components
+│   │   │   │   ├── auth/     # Login, Register
+│   │   │   │   ├── layout/   # Header, Sidebar
+│   │   │   │   ├── markdown/ # MDRenderer, LinkPreview
+│   │   │   │   ├── editor/   # HighlightOverlay, ColorPicker
+│   │   │   │   ├── files/    # FileBrowser, FileTree
+│   │   │   │   └── admin/    # UserManagement
+│   │   │   ├── hooks/        # Custom React hooks
+│   │   │   ├── store/        # Zustand stores
+│   │   │   ├── lib/          # Utilities
+│   │   │   ├── pages/        # Route pages
+│   │   │   └── types.ts      # TypeScript types
+│   ├── api/                  # Cloudflare Workers (backend)
+│   │   ├── index.ts          # Main worker router
+│   │   ├── auth.ts           # Authentication API
+│   │   ├── files.ts          # File CRUD operations
+│   │   ├── permissions.ts    # Permission management
+│   │   ├── highlights.ts     # Highlight annotations
+│   │   └── collaboration.ts  # Durable Object (WebSocket)
 ├── migrations/              # D1 database migrations
 │   └── 0001_initial.sql    # Initial schema
 ├── public/                  # Static assets
 ├── wrangler.toml           # Cloudflare configuration
-├── vite.config.ts          # Vite configuration
-├── tailwind.config.js      # TailwindCSS configuration
 └── package.json            # Dependencies and scripts
 ```
 
@@ -246,7 +254,7 @@ npx wrangler deploy
 npm run build
 
 # Deploy to Cloudflare Pages
-npx wrangler pages deploy dist --project-name=personal-cms
+npx wrangler pages deploy apps/web/dist --project-name=personal-cms
 ```
 
 ### Step 8: Configure Custom Domain (Optional)
@@ -309,7 +317,7 @@ cdk deploy
 4. Build and deploy frontend:
 ```bash
 npm run build
-aws s3 sync dist/ s3://your-bucket-name
+aws s3 sync apps/web/dist/ s3://your-bucket-name
 ```
 
 5. Setup CloudFront distribution for HTTPS and caching
@@ -452,7 +460,7 @@ npx wrangler d1 migrations apply personal-cms-local --local
 
 ### CORS Errors
 
-Ensure your Workers are configured to allow CORS in `workers/index.ts`:
+Ensure your Workers are configured to allow CORS in `apps/api/index.ts`:
 ```typescript
 headers: {
   'Access-Control-Allow-Origin': '*',
