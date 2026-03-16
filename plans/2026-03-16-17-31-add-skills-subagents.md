@@ -16,4 +16,4 @@ Timestamp: 2026-03-16 17:31 (Europe/Berlin)
 ## Phase 3: Validate
 - [x] Run `quick_validate.py` for each skill.
 - [ ] (Optional) Forward-test with a subagent if requested.
-- [ ] Commit per phase (if you want skills in this repo).
+- [x] Commit per phase (if you want skills in this repo).
