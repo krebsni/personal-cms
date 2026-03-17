@@ -1,0 +1,4 @@
+interface:
+  display_name: "QA + CI Automation"
+  short_description: "Testing and CI automation workflows"
+  default_prompt: "Use $qa-ci-automation to add tests and CI checks for this repo."

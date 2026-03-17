@@ -5,7 +5,7 @@ export default defineWorkersConfig({
     poolOptions: {
       workers: {
         isolatedStorage: false,
-        main: "./workers/index.ts",
+        main: "./apps/api/index.ts",
       miniflare: {
           compatibilityDate: "2024-01-01",
           d1Databases: ["DB"],

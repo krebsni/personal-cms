@@ -1,5 +1,7 @@
 # Personal CMS - New Implementation Plan
 
+> Superseded by `IMPLEMENTATION_PLAN_MASTER.md`. Keep this file for historical reference only.
+
 ## 1. Goal and Vision
 The goal is to rebuild the Personal CMS into a premium, Obsidian-like web application. The application will center around "Repositories" (like vaults) containing folder structures of markdown files. It will support granular collaborative features, including unified read/highlight modes, raw code editing for owners, link previews, and access requests. The stack will use Cloudflare Workers (D1, R2, Durable Objects) for the backend and a modern React frontend deployed on Cloudflare Pages.
 
@@ -71,19 +73,19 @@ To support the new requirements, we will expand the existing D1 schema:
 ### Phase 1: Database Schema & Repositories Worker
 - Update D1 schema (migrations) to include `repositories`, `assignments` (for folders/files), and `notifications`.
 - Update `files` table to include `parent_id`, `repository_id`, and `is_public`.
-- Implement `workers/repositories.ts` for Repository CRUD operations.
+- Implement `apps/api/repositories.ts` for Repository CRUD operations.
 
 ### Phase 2: Files API & Cascading Assignments
-- Update `workers/files.ts` to handle `parent_id` and `repository_id`.
+- Update `apps/api/files.ts` to handle `parent_id` and `repository_id`.
 - Implement logic to check permissions based on cascading folder assignments (e.g., a query that climbs the tree to check if a user is assigned to a parent folder).
 - Implement assignment endpoints (`POST /api/assignments/:resource_id`, etc.).
 
 ### Phase 3: Notifications & Admin API Updates
-- Update `workers/admin.ts` to manage repositories and highlight color palettes.
-- Implement `workers/notifications.ts` for access requests and grant actions.
+- Update `apps/api/admin.ts` to manage repositories and highlight color palettes.
+- Implement `apps/api/notifications.ts` for access requests and grant actions.
 
 ### Phase 4: Collaboration & Highlights API Updates
-- Refine optimistic locking capabilities in `workers/highlights.ts` (or Durable Objects).
+- Refine optimistic locking capabilities in `apps/api/highlights.ts` (or Durable Objects).
 - Create a dedicated raw markdown code edit API endpoint restricted strictly to owners.
 
 ### Phase 5: Frontend - Foundation & Repository UI

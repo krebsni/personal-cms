@@ -1,0 +1,4 @@
+interface:
+  display_name: "Cloudflare Workers Stack"
+  short_description: "Workers/D1/R2 workflow and guardrails"
+  default_prompt: "Use $cloudflare-workers-stack to change Workers/D1/R2 with repo guardrails."
