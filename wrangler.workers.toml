@@ -1,0 +1,73 @@
+name = "personal-cms-workers"
+main = "apps/api/index.ts"
+compatibility_date = "2024-01-01"
+pages_build_output_dir = "apps/web/dist"
+
+# Local development variables
+[vars]
+ENVIRONMENT = "development"
+JWT_SECRET = "dev-secret-key-change-in-production-minimum-32-chars"
+
+# Development configuration
+[env.development]
+vars = { ENVIRONMENT = "development", JWT_SECRET = "dev-secret-key-change-in-production-minimum-32-chars" }
+
+# Production configuration
+[env.production]
+vars = { ENVIRONMENT = "production" }
+
+# Staging configuration
+[env.staging]
+vars = { ENVIRONMENT = "staging" }
+
+# D1 Database bindings - Development/Local
+[[d1_databases]]
+binding = "DB"
+database_name = "personal-cms-local"
+database_id = "local"
+
+# D1 Database bindings - Production
+[env.production.d1_databases]
+binding = "DB"
+database_name = "personal-cms-prod"
+database_id = "PROD_DB_ID_GOES_HERE" # Update with actual ID
+
+# D1 Database bindings - Staging
+[env.staging.d1_databases]
+binding = "DB"
+database_name = "personal-cms-staging"
+database_id = "STAGING_DB_ID_GOES_HERE" # Update with actual ID
+
+# R2 Storage bindings - Development/Local
+[[r2_buckets]]
+binding = "R2_BUCKET"
+bucket_name = "personal-cms-files-local"
+
+# R2 Storage bindings - Production
+[env.production.r2_buckets]
+binding = "R2_BUCKET"
+bucket_name = "personal-cms-files-prod"
+
+# R2 Storage bindings - Staging
+[env.staging.r2_buckets]
+binding = "R2_BUCKET"
+bucket_name = "personal-cms-files-staging"
+
+# Durable Objects for real-time collaboration
+[[durable_objects.bindings]]
+name = "COLLABORATION_ROOM"
+class_name = "CollaborationRoom"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["CollaborationRoom"]
+
+# Environment variables (secrets should be set via `wrangler secret put`)
+# JWT_SECRET (set via wrangler secret put JWT_SECRET)
+
+[build]
+command = "npm run build:workers"
+
+# Uncomment when ready to deploy
+# [observability]
+# enabled = true
