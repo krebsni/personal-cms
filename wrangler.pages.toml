@@ -1,0 +1,8 @@
+name = "personal-cms-pages"
+
+# Pages-only configuration
+pages_build_output_dir = "apps/web/dist"
+
+# Named environments supported by Pages
+[env.preview]
+[env.production]

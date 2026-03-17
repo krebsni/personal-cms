@@ -36,6 +36,7 @@ jobs:
             pages deploy apps/web/dist
             --project-name personal-cms
             --branch ${{ github.ref_name }}
+            --config wrangler.pages.toml
 
       - name: Deploy Workers (Staging)
         uses: cloudflare/wrangler-action@v3

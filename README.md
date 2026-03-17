@@ -181,10 +181,16 @@ personal-cms/
 │   │   ├── permissions.ts    # Permission management
 │   │   ├── highlights.ts     # Highlight annotations
 │   │   └── collaboration.ts  # Durable Object (WebSocket)
+├── workers/                 # Cloudflare Workers (backend)
+│   ├── index.ts            # Main worker router
+│   ├── auth.ts             # Authentication API
+│   ├── files.ts            # File CRUD operations
+│   ├── permissions.ts      # Permission management
+│   ├── highlights.ts       # Highlight annotations
+│   └── collaboration.ts    # Durable Object (WebSocket)
 ├── migrations/              # D1 database migrations
 │   └── 0001_initial.sql    # Initial schema
 ├── public/                  # Static assets
-├── wrangler.toml           # Cloudflare configuration
 └── package.json            # Dependencies and scripts
 ```
 
@@ -303,7 +309,13 @@ Pages preview deploys use `wrangler pages deploy --branch <branch>` and will pub
 These workflows use Wrangler’s direct upload flow for Pages; Direct Upload projects cannot be switched to Git integration later.
 
 ### Troubleshooting
-- **Pages warning about `pages_build_output_dir`**: ensure `wrangler.toml` includes `pages_build_output_dir = "apps/web/dist"`.\n- **Auth error `(/memberships) Authentication failed (code 9106)`**:\n  - Verify `CLOUDFLARE_API_TOKEN` is a valid API token with Pages edit permissions (Account → Cloudflare Pages → Edit).\n  - Ensure `CLOUDFLARE_ACCOUNT_ID` matches the account that owns the Pages/Workers project.\n  - If deploying Workers, the token should also allow Workers edits.\n+
+- **Pages config validation errors**: use the Pages-only config file `wrangler.pages.toml` and pass `--config wrangler.pages.toml` in Pages deploy commands.
+- **Pages warning about `pages_build_output_dir`**: ensure `wrangler.pages.toml` includes `pages_build_output_dir = "apps/web/dist"`.
+- **Auth error `(/memberships) Authentication failed (code 9106)`**:
+  - Verify `CLOUDFLARE_API_TOKEN` is a valid API token with Pages edit permissions (Account → Cloudflare Pages → Edit).
+  - Ensure `CLOUDFLARE_ACCOUNT_ID` matches the account that owns the Pages/Workers project.
+  - If deploying Workers, the token should also allow Workers edits.
+
 ### Verification Checklist
 1. Open a PR and confirm the preview Pages deployment URL is created.
 2. Merge or push to `staging` and confirm Workers deploy with `--env staging`.
